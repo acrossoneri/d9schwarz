@@ -1,0 +1,200 @@
+/* AC Rossoneri – Junioren D-9 schwarz
+   Simple, mobile-first stylesheet. Red/black club theme. */
+
+:root {
+  --red: #C8102E;
+  --red-dark: #8f0a20;
+  --black: #14171a;
+  --ink: #1a1d21;
+  --muted: #6b7280;
+  --line: #e5e7eb;
+  --bg: #f4f5f7;
+  --card: #ffffff;
+  --us-bg: #fff1f2;
+  --us-line: var(--red);
+  --radius: 12px;
+  --shadow: 0 1px 3px rgba(0, 0, 0, .08), 0 1px 2px rgba(0, 0, 0, .04);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #e8eaed;
+    --muted: #9aa0a6;
+    --line: #2a2e33;
+    --bg: #0f1113;
+    --card: #191c1f;
+    --us-bg: #2a1214;
+    --shadow: 0 1px 3px rgba(0, 0, 0, .5);
+  }
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  line-height: 1.5;
+}
+
+.wrap { width: 100%; max-width: 760px; margin-inline: auto; padding-inline: 16px; }
+
+/* Header */
+.site-header {
+  background: linear-gradient(135deg, var(--black) 0%, var(--red-dark) 60%, var(--red) 100%);
+  color: #fff;
+}
+.header-inner { display: flex; align-items: center; gap: 14px; padding-block: 18px; }
+.crest {
+  flex: 0 0 auto;
+  width: 52px; height: 52px;
+  display: grid; place-items: center;
+  background: rgba(255, 255, 255, .12);
+  border: 2px solid rgba(255, 255, 255, .35);
+  border-radius: 50%;
+  font-weight: 800; letter-spacing: .5px; font-size: 15px;
+}
+.titles { flex: 1 1 auto; min-width: 0; }
+.titles h1 { margin: 0; font-size: 1.3rem; line-height: 1.15; }
+.titles p { margin: 2px 0 0; font-size: .9rem; opacity: .9; }
+.season { text-align: right; font-size: .8rem; opacity: .95; display: flex; flex-direction: column; align-items: flex-end; }
+.season .updated { display: block; opacity: .75; margin-top: 2px; }
+.refresh-btn {
+  margin-top: 8px; appearance: none; cursor: pointer;
+  background: rgba(255, 255, 255, .15); color: #fff; border: 1px solid rgba(255, 255, 255, .35);
+  width: 32px; height: 32px; border-radius: 50%; font-size: 16px; line-height: 1;
+  display: grid; place-items: center; transition: background .12s;
+}
+.refresh-btn:hover { background: rgba(255, 255, 255, .3); }
+.refresh-btn.spin { animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Sample banner */
+.sample-banner {
+  margin-top: 12px;
+  background: #fff8e1; color: #7a5b00;
+  border: 1px solid #f2d98a; border-radius: var(--radius);
+  padding: 10px 14px; font-size: .88rem;
+}
+@media (prefers-color-scheme: dark) {
+  .sample-banner { background: #2c2510; color: #e8cf87; border-color: #4d411c; }
+}
+.sample-banner code { background: rgba(0, 0, 0, .08); padding: 1px 5px; border-radius: 5px; }
+
+/* Tabs */
+.tabs {
+  display: flex; gap: 6px;
+  margin-top: 16px;
+  position: sticky; top: 0; z-index: 5;
+  padding-top: 10px; padding-bottom: 10px;
+  background: var(--bg);
+}
+.tab {
+  flex: 1 1 0;
+  appearance: none; border: 1px solid var(--line); background: var(--card);
+  color: var(--ink); font: inherit; font-weight: 600; font-size: .92rem;
+  padding: 10px 8px; border-radius: 10px; cursor: pointer;
+  transition: background .12s, color .12s, border-color .12s;
+}
+.tab:hover { border-color: var(--red); }
+.tab.is-active { background: var(--red); border-color: var(--red); color: #fff; }
+
+/* Panels */
+main { padding-bottom: 40px; }
+.panel { margin-top: 8px; }
+.panel h2 { font-size: 1.05rem; margin: 22px 0 10px; }
+.panel h2:first-child { margin-top: 10px; }
+.hint { color: var(--muted); font-size: .85rem; margin: -4px 0 12px; }
+
+.error-box {
+  background: #fdecea; color: #8a1c14; border: 1px solid #f5c2bd;
+  padding: 12px 14px; border-radius: var(--radius); margin: 16px 0;
+  font-size: .9rem;
+}
+
+/* Standings table */
+.table-scroll { overflow-x: auto; border-radius: var(--radius); box-shadow: var(--shadow); }
+table.standings { width: 100%; border-collapse: collapse; background: var(--card); font-size: .9rem; }
+.standings th, .standings td { padding: 9px 8px; text-align: center; white-space: nowrap; }
+.standings thead th { background: var(--black); color: #fff; font-weight: 600; font-size: .78rem; }
+.standings .c-team { text-align: left; }
+.standings tbody tr { border-top: 1px solid var(--line); }
+.standings tbody td.c-rank { color: var(--muted); font-variant-numeric: tabular-nums; }
+.standings tbody td.c-team { text-align: left; font-weight: 600; }
+.standings tbody td.c-pts { font-weight: 800; }
+.standings tr.is-us { background: var(--us-bg); box-shadow: inset 3px 0 0 var(--us-line); }
+
+/* Match list */
+.match-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.match {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: var(--shadow); overflow: hidden;
+  scroll-margin-top: 84px; /* land below the sticky tab bar when auto-scrolling */
+}
+.match.is-next {
+  position: relative; overflow: visible;
+  border-color: var(--red);
+  box-shadow: 0 0 0 2px rgba(200, 16, 46, .22), var(--shadow);
+}
+.match.is-next::before {
+  content: "Nächstes Spiel";
+  position: absolute; top: -9px; left: 12px;
+  background: var(--red); color: #fff;
+  font-size: .66rem; font-weight: 700; letter-spacing: .03em;
+  padding: 2px 8px; border-radius: 999px;
+}
+.match-head {
+  width: 100%; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px;
+  padding: 12px 14px; background: none; border: 0; color: inherit; font: inherit; text-align: left;
+}
+.match.clickable .match-head { cursor: pointer; }
+.match-date { font-size: .74rem; color: var(--muted); text-align: center; min-width: 42px; }
+.match-date .round { display: block; font-size: .66rem; opacity: .8; }
+.match-teams { display: grid; gap: 2px; min-width: 0; }
+.match-teams .row { display: flex; align-items: center; gap: 8px; }
+.match-teams .name { font-weight: 600; font-size: .95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.match-teams .name.us { color: var(--red); }
+.match-score { font-weight: 800; font-size: 1.05rem; font-variant-numeric: tabular-nums; text-align: right; min-width: 46px; }
+.match-score.small { font-size: .8rem; font-weight: 600; color: var(--muted); }
+.chev { color: var(--muted); font-size: .8rem; margin-left: 4px; }
+
+.match-goals { padding: 0 14px 12px 14px; border-top: 1px dashed var(--line); display: none; }
+.match.open .match-goals { display: block; }
+.match-goals .venue { font-size: .78rem; color: var(--muted); margin: 8px 0; }
+.match-goals ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.match-goals li { display: flex; justify-content: space-between; font-size: .88rem; }
+.match-goals li .min { color: var(--muted); font-variant-numeric: tabular-nums; }
+.match-goals .none { color: var(--muted); font-size: .84rem; font-style: italic; }
+
+/* Scorers */
+.scorer-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.scorer {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: var(--shadow); overflow: hidden;
+}
+.scorer-head {
+  width: 100%; display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 12px;
+  background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer;
+  padding: 11px 14px;
+}
+.scorer-rank { font-weight: 800; color: var(--red); width: 26px; text-align: center; font-variant-numeric: tabular-nums; }
+.scorer .sc-name { font-weight: 600; }
+.scorer .sc-goals { font-weight: 800; text-align: right; }
+.scorer .sc-goals span { font-weight: 500; color: var(--muted); font-size: .8rem; margin-left: 4px; }
+.scorer .chev { color: var(--muted); font-size: .8rem; }
+
+.scorer-vs { display: none; padding: 0 14px 12px; border-top: 1px dashed var(--line); }
+.scorer.open .scorer-vs { display: block; }
+.scorer-vs strong { display: block; font-size: .8rem; margin: 8px 0 6px; color: var(--muted); font-weight: 600; }
+.scorer-vs ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.scorer-vs li { display: flex; justify-content: space-between; font-size: .88rem; }
+.scorer-vs li .c { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* Footer */
+.site-footer { margin-top: 24px; padding-block: 20px; border-top: 1px solid var(--line); }
+.site-footer a { color: var(--red); font-weight: 600; text-decoration: none; }
+.site-footer a:hover { text-decoration: underline; }
+.muted { color: var(--muted); font-size: .78rem; margin-top: 6px; }

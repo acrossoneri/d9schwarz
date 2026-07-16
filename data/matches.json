@@ -1,0 +1,104 @@
+{
+  "updated": "2026-07-16 14:14",
+  "matches": [
+    {
+      "id": "145015",
+      "date": "2026-08-22",
+      "time": "10:00",
+      "round": "Sa 22.08.2026",
+      "home": "AC Rossoneri schwarz",
+      "away": "FC Liestal weiss",
+      "homeScore": null,
+      "awayScore": null,
+      "status": "scheduled"
+    },
+    {
+      "id": "145019",
+      "date": "2026-08-29",
+      "time": "09:30",
+      "round": "Sa 29.08.2026",
+      "home": "FC Gelterkinden weiss",
+      "away": "AC Rossoneri schwarz",
+      "homeScore": null,
+      "awayScore": null,
+      "status": "scheduled"
+    },
+    {
+      "id": "145024",
+      "date": "2026-09-05",
+      "time": "10:00",
+      "round": "Sa 05.09.2026",
+      "home": "AC Rossoneri schwarz",
+      "away": "FC Kaiseraugst",
+      "homeScore": null,
+      "awayScore": null,
+      "status": "scheduled"
+    },
+    {
+      "id": "145030",
+      "date": "2026-09-12",
+      "time": null,
+      "round": "Sa 12.09.2026",
+      "home": "SV Sissach b",
+      "away": "AC Rossoneri schwarz",
+      "homeScore": null,
+      "awayScore": null,
+      "status": "scheduled"
+    },
+    {
+      "id": "145033",
+      "date": "2026-09-19",
+      "time": "10:00",
+      "round": "Sa 19.09.2026",
+      "home": "AC Rossoneri schwarz",
+      "away": "FC Zeiningen",
+      "homeScore": null,
+      "awayScore": null,
+      "status": "scheduled"
+    },
+    {
+      "id": "145041",
+      "date": "2026-09-26",
+      "time": "11:00",
+      "round": "Sa 26.09.2026",
+      "home": "FC Wallbach rot",
+      "away": "AC Rossoneri schwarz",
+      "homeScore": null,
+      "awayScore": null,
+      "status": "scheduled"
+    },
+    {
+      "id": "145042",
+      "date": "2026-10-17",
+      "time": "10:00",
+      "round": "Sa 17.10.2026",
+      "home": "AC Rossoneri schwarz",
+      "away": "FC Lausen 72 rot",
+      "homeScore": null,
+      "awayScore": null,
+      "status": "scheduled"
+    },
+    {
+      "id": "145051",
+      "date": "2026-10-24",
+      "time": "10:00",
+      "round": "Sa 24.10.2026",
+      "home": "AC Rossoneri schwarz",
+      "away": "FC Möhlin-Riburg/ACLI D-13 blau",
+      "homeScore": null,
+      "awayScore": null,
+      "status": "scheduled"
+    },
+    {
+      "id": "145053",
+      "date": "2026-10-31",
+      "time": "11:00",
+      "round": "Sa 31.10.2026",
+      "home": "FC Frenkendorf weiss",
+      "away": "AC Rossoneri schwarz",
+      "homeScore": null,
+      "awayScore": null,
+      "status": "scheduled"
+    }
+  ]
+}

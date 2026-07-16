@@ -1,0 +1,12 @@
+{
+  "_comment": "Torschützen pro Spiel. Schlüssel = Spielnummer (siehe matches.json -> id). Nur EIGENE Tore eintragen. Beispiel: \"145015\": [ { \"player\": \"Max Muster\", \"minute\": 12 }, { \"player\": \"Max Muster\" } ]. minute ist optional. Diese Datei wird NICHT vom Scraper überschrieben.",
+  "145015": [],
+  "145019": [],
+  "145024": [],
+  "145030": [],
+  "145033": [],
+  "145041": [],
+  "145042": [],
+  "145051": [],
+  "145053": []
+}

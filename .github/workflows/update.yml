@@ -1,0 +1,45 @@
+name: Update data
+
+# Runs the scraper on a schedule, commits refreshed table + fixtures.
+# Times are UTC (Swiss local = UTC+1 winter / +2 summer). Adjust as you like.
+on:
+  schedule:
+    - cron: "*/20 5-17 * * 6"   # Saturdays (match day) every 20 min, 05:00-17:59 UTC
+    - cron: "0 4 * * *"         # once daily as a baseline
+  workflow_dispatch:            # lets you trigger it manually from the Actions tab
+
+concurrency:
+  group: update-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write            # allow committing the refreshed data back
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install -r scraper/requirements.txt
+          python -m playwright install --with-deps chromium
+
+      - name: Scrape matchcenter
+        run: python scraper/scrape.py
+
+      - name: Commit if data changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/matches.json data/standings.json
+          if git diff --staged --quiet; then
+            echo "No changes."
+          else
+            git commit -m "data: auto-update $(date -u +'%Y-%m-%d %H:%M UTC')"
+            git push
+          fi

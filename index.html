@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="de-CH">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AC Rossoneri · Junioren D-9 schwarz</title>
+  <meta name="description" content="Tabelle, Spielplan, Resultate und Torschützen der Junioren D-9 schwarz des AC Rossoneri." />
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <div class="crest" aria-hidden="true">ACR</div>
+      <div class="titles">
+        <h1 id="club-name">AC Rossoneri</h1>
+        <p id="team-name">Junioren D-9 schwarz</p>
+      </div>
+      <div class="season">
+        <span id="season-label">Saison 2026/27</span>
+        <span id="updated-label" class="updated"></span>
+        <button id="refresh-btn" class="refresh-btn" type="button" title="Aktualisieren" aria-label="Aktualisieren">↻</button>
+      </div>
+    </div>
+  </header>
+
+  <div id="sample-banner" class="sample-banner wrap" hidden>
+    ⚠️ Aktuell werden <strong>Beispieldaten</strong> angezeigt. Bearbeite die Dateien im Ordner
+    <code>data/</code>, um echte Resultate und Torschützen einzutragen.
+  </div>
+
+  <nav class="tabs wrap" role="tablist" aria-label="Ansichten">
+    <button class="tab is-active" role="tab" aria-selected="true" data-tab="tabelle">Tabelle</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="spiele">Spiele</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="torschuetzen">Torschützen</button>
+  </nav>
+
+  <main class="wrap">
+    <div id="error-box" class="error-box" hidden></div>
+
+    <!-- TABELLE -->
+    <section id="tab-tabelle" class="panel" role="tabpanel">
+      <h2 id="standings-group">Tabelle</h2>
+      <div class="table-scroll">
+        <table class="standings" id="standings-table">
+          <thead>
+            <tr>
+              <th class="c-rank">#</th>
+              <th class="c-team">Team</th>
+              <th title="Spiele">Sp</th>
+              <th title="Siege">S</th>
+              <th title="Unentschieden">U</th>
+              <th title="Niederlagen">N</th>
+              <th title="Tore">Tore</th>
+              <th title="Tordifferenz">Diff</th>
+              <th title="Punkte">Pkt</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SPIELE -->
+    <section id="tab-spiele" class="panel" role="tabpanel" hidden>
+      <h2>Spiele</h2>
+      <p class="hint">Alle Spiele chronologisch. Die Liste springt automatisch zum nächsten Spiel –
+        nach oben scrollen für vergangene, nach unten für kommende Spiele.
+        Tippe auf ein gespieltes Spiel, um die Torschützen zu sehen.</p>
+      <ul class="match-list" id="match-list"></ul>
+    </section>
+
+    <!-- TORSCHÜTZEN -->
+    <section id="tab-torschuetzen" class="panel" role="tabpanel" hidden>
+      <h2>Torschützen</h2>
+      <p class="hint">Eigene Torschützen der laufenden Saison.
+        Tippe auf einen Spieler, um zu sehen, gegen wen er getroffen hat.</p>
+      <ol class="scorer-list" id="scorer-list"></ol>
+    </section>
+  </main>
+
+  <footer class="site-footer wrap">
+    <p class="muted">Inoffizielle Team-Seite · Tabelle &amp; Spielplan automatisch aktualisiert · Torschützen manuell gepflegt.</p>
+  </footer>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>
