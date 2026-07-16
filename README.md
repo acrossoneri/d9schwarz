@@ -64,12 +64,17 @@ Per `cron` auf deinem Rechner, z. B. samstags stündlich (Rechner muss dann lauf
 > Hinweis: `cron` findet `gh` evtl. nicht im PATH. Dann im Crontab `PATH=` setzen
 > oder in `update.sh` den vollen Pfad zu `gh` hinterlegen.
 
-## Warum läuft der Scraper nicht in der Cloud?
+## Automatische Aktualisierung (Cloud)
 
-Das Matchcenter liegt hinter **Cloudflare**. Ein echter (headless) Browser kommt
-durch – aber nur von einer „normalen" IP. Die Rechenzentrums-IPs von GitHub Actions
-werden blockiert, darum ist der Zeitplan im Workflow deaktiviert. Der Scraper läuft
-zuverlässig von deinem Rechner aus (`update.sh`).
+Ein GitHub-Actions-Workflow (`.github/workflows/update.yml`) startet den Scraper
+nach Zeitplan (samstags oft, sonst täglich) und veröffentlicht neue Resultate/Tabelle
+von selbst – ohne dass dein Rechner läuft.
+
+Das Matchcenter liegt hinter **Cloudflare**; ein geduldiger headless Browser kommt
+durch, aber die Rechenzentrums-IP von GitHub wird gelegentlich blockiert. Darum ist
+der Scrape-Schritt **best effort**: klappt er nicht, bleiben einfach die letzten Daten
+stehen (keine Fehlermails). Für eine garantierte Aktualisierung `./scraper/update.sh`
+von deinem Rechner ausführen.
 
 ## Einrichtung auf einem neuen Rechner
 

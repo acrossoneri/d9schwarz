@@ -2,15 +2,16 @@ name: Update data
 
 # Runs the scraper and commits the refreshed table + fixtures.
 #
-# NOTE: GitHub's datacenter IPs are blocked by the matchcenter's Cloudflare, so
-# SCHEDULED cloud runs currently fail. The schedule is therefore disabled and the
-# reliable path is scraper/update.sh run from your own machine (residential IP).
-# `workflow_dispatch` is kept so you can still test manually, or re-enable the
-# schedule if you later route it through a residential proxy.
+# The matchcenter is behind Cloudflare. A patient headless browser gets through,
+# but GitHub's datacenter IP is occasionally challenged, so the scrape step is
+# BEST-EFFORT: if it can't get through, the run keeps the previous data instead of
+# failing (no error emails). For a guaranteed refresh, run scraper/update.sh from
+# your own machine.
+# Times are UTC (Swiss local = UTC+1 winter / +2 summer).
 on:
-  # schedule:
-  #   - cron: "*/20 5-17 * * 6"   # Saturdays every 20 min, 05:00-17:59 UTC
-  #   - cron: "0 4 * * *"         # daily baseline
+  schedule:
+    - cron: "*/20 5-17 * * 6"   # Saturdays (match day) every 20 min, 05:00-17:59 UTC
+    - cron: "0 4 * * *"         # once daily as a baseline
   workflow_dispatch:            # manual trigger from the Actions tab
 
 concurrency:
@@ -34,8 +35,10 @@ jobs:
           pip install -r scraper/requirements.txt
           python -m playwright install --with-deps chromium
 
-      - name: Scrape matchcenter
-        run: python scraper/scrape.py
+      - name: Scrape matchcenter (best effort)
+        run: |
+          python scraper/scrape.py \
+            || echo "::warning::Scrape failed (Cloudflare?) — keeping previous data."
 
       - name: Commit if data changed
         run: |
