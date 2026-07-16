@@ -52,10 +52,6 @@ body {
   flex: 0 0 auto;
   width: 52px; height: 52px;
   object-fit: contain;
-  background: #fff;
-  border: 2px solid rgba(255, 255, 255, .6);
-  border-radius: 50%;
-  padding: 4px;
 }
 .titles { flex: 1 1 auto; min-width: 0; }
 .titles h1 { margin: 0; font-size: 1.3rem; line-height: 1.15; }
@@ -126,6 +122,11 @@ table.standings { width: 100%; border-collapse: collapse; background: var(--card
 .standings tbody td.c-team { text-align: left; font-weight: 600; }
 .standings tbody td.c-pts { font-weight: 800; }
 .standings tr.is-us { background: var(--us-bg); box-shadow: inset 3px 0 0 var(--us-line); }
+.team-link {
+  background: none; border: 0; padding: 0; margin: 0; font: inherit; font-weight: inherit;
+  color: inherit; text-align: left; cursor: pointer;
+}
+.team-link:hover { color: var(--red); text-decoration: underline; }
 
 /* Team filter dropdown */
 .team-filter {

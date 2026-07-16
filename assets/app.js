@@ -91,7 +91,7 @@ function renderStandings() {
     if (isUs(r.team)) tr.className = "is-us";
     tr.innerHTML =
       `<td class="c-rank">${r.rank ?? ""}</td>` +
-      `<td class="c-team">${esc(r.team)}</td>` +
+      `<td class="c-team"><button type="button" class="team-link" data-team="${esc(r.team)}">${esc(r.team)}</button></td>` +
       `<td>${r.played ?? ""}</td>` +
       `<td>${r.won ?? ""}</td>` +
       `<td>${r.drawn ?? ""}</td>` +
@@ -180,7 +180,7 @@ function matchCard(m, isPlayed) {
 
   const scoreHtml = isPlayed
     ? `<div class="match-score">${m.homeScore}<span>:</span>${m.awayScore}</div>`
-    : `<div class="match-score small">${m.time || ""}</div>`;
+    : `<div class="match-score small">${esc(m.time || "")}</div>`;
 
   const head = document.createElement("button");
   head.className = "match-head";
@@ -214,7 +214,7 @@ function renderGoalDetail(m) {
   }
   html += `<strong>Unsere Torschützen</strong><ul>`;
   goals.forEach(g => {
-    html += `<li><span>⚽ ${esc(g.player)}</span><span class="min">${g.minute ? g.minute + "'" : ""}</span></li>`;
+    html += `<li><span>⚽ ${esc(g.player)}</span><span class="min">${g.minute ? esc(g.minute) + "'" : ""}</span></li>`;
   });
   html += `</ul>`;
   return html;
@@ -281,20 +281,31 @@ function esc(s) {
 
 /* ---------- tabs ---------- */
 
-function setupTabs() {
-  const tabs = document.querySelectorAll(".tab");
-  tabs.forEach(tab => {
-    tab.addEventListener("click", () => {
-      tabs.forEach(t => { t.classList.remove("is-active"); t.setAttribute("aria-selected", "false"); });
-      tab.classList.add("is-active");
-      tab.setAttribute("aria-selected", "true");
-      const target = tab.dataset.tab;
-      document.querySelectorAll(".panel").forEach(p => { p.hidden = true; });
-      document.getElementById("tab-" + target).hidden = false;
-      if (target === "spiele") scrollToNextMatch();
-      else window.scrollTo({ top: 0, behavior: "smooth" });
-    });
+function activateTab(target) {
+  document.querySelectorAll(".tab").forEach(t => {
+    const on = t.dataset.tab === target;
+    t.classList.toggle("is-active", on);
+    t.setAttribute("aria-selected", on ? "true" : "false");
   });
+  document.querySelectorAll(".panel").forEach(p => { p.hidden = p.id !== "tab-" + target; });
+  if (target === "spiele") scrollToNextMatch();
+  else window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function setupTabs() {
+  document.querySelectorAll(".tab").forEach(tab => {
+    tab.addEventListener("click", () => activateTab(tab.dataset.tab));
+  });
+}
+
+// From a team in the Tabelle -> show that team's games in the Spiele tab.
+function showTeamGames(team) {
+  const our = DATA.config && DATA.config.ourTeam;
+  const val = team === our ? "__us__" : team;
+  const sel = document.getElementById("team-filter");
+  if (sel && [...sel.options].some(o => o.value === val)) sel.value = val;
+  renderMatches();
+  activateTab("spiele");
 }
 
 /* ---------- init ---------- */
@@ -352,6 +363,11 @@ function init() {
   if (btn) btn.addEventListener("click", () => refresh(true));
   const filter = document.getElementById("team-filter");
   if (filter) filter.addEventListener("change", () => { renderMatches(); scrollToNextMatch(); });
+  const standings = document.getElementById("standings-table");
+  if (standings) standings.addEventListener("click", (e) => {
+    const link = e.target.closest(".team-link");
+    if (link) showTeamGames(link.dataset.team);
+  });
   document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
   window.addEventListener("focus", () => refresh());
   refresh(true);
