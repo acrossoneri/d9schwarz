@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-16 16:40",
+  "updated": "2026-07-16 19:03",
   "matches": [
     {
       "id": "145012",
@@ -387,23 +387,23 @@
       "status": "scheduled"
     },
     {
-      "id": "145048",
-      "date": "2026-10-24",
-      "time": null,
-      "round": "Sa 24.10.2026",
-      "home": "SV Sissach b",
-      "away": "FC Gelterkinden weiss",
-      "homeScore": null,
-      "awayScore": null,
-      "status": "scheduled"
-    },
-    {
       "id": "145047",
       "date": "2026-10-24",
       "time": null,
       "round": "Sa 24.10.2026",
       "home": "FC Lausen 72 rot",
       "away": "FC Kaiseraugst",
+      "homeScore": null,
+      "awayScore": null,
+      "status": "scheduled"
+    },
+    {
+      "id": "145048",
+      "date": "2026-10-24",
+      "time": null,
+      "round": "Sa 24.10.2026",
+      "home": "SV Sissach b",
+      "away": "FC Gelterkinden weiss",
       "homeScore": null,
       "awayScore": null,
       "status": "scheduled"
