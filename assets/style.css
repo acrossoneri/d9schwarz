@@ -51,11 +51,11 @@ body {
 .crest {
   flex: 0 0 auto;
   width: 52px; height: 52px;
-  display: grid; place-items: center;
-  background: rgba(255, 255, 255, .12);
-  border: 2px solid rgba(255, 255, 255, .35);
+  object-fit: contain;
+  background: #fff;
+  border: 2px solid rgba(255, 255, 255, .6);
   border-radius: 50%;
-  font-weight: 800; letter-spacing: .5px; font-size: 15px;
+  padding: 4px;
 }
 .titles { flex: 1 1 auto; min-width: 0; }
 .titles h1 { margin: 0; font-size: 1.3rem; line-height: 1.15; }
@@ -126,6 +126,18 @@ table.standings { width: 100%; border-collapse: collapse; background: var(--card
 .standings tbody td.c-team { text-align: left; font-weight: 600; }
 .standings tbody td.c-pts { font-weight: 800; }
 .standings tr.is-us { background: var(--us-bg); box-shadow: inset 3px 0 0 var(--us-line); }
+
+/* Team filter dropdown */
+.team-filter {
+  width: 100%; margin-bottom: 12px;
+  padding: 10px 36px 10px 12px;
+  font: inherit; font-size: .95rem; font-weight: 600; color: var(--ink);
+  background-color: var(--card); border: 1px solid var(--line); border-radius: 10px;
+  -webkit-appearance: none; appearance: none; cursor: pointer;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="8" viewBox="0 0 12 8"><path fill="none" stroke="%23999" stroke-width="1.5" d="M1 1.5l5 5 5-5"/></svg>');
+  background-repeat: no-repeat; background-position: right 13px center;
+}
+.team-filter:focus { outline: 2px solid var(--red); outline-offset: 1px; }
 
 /* Match list */
 .match-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }

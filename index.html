@@ -5,12 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AC Rossoneri · Junioren D-9 schwarz</title>
   <meta name="description" content="Tabelle, Spielplan, Resultate und Torschützen der Junioren D-9 schwarz des AC Rossoneri." />
+  <link rel="icon" href="assets/logo.gif" />
   <link rel="stylesheet" href="assets/style.css" />
 </head>
 <body>
   <header class="site-header">
     <div class="wrap header-inner">
-      <div class="crest" aria-hidden="true">ACR</div>
+      <img class="crest" src="assets/logo.gif" alt="AC Rossoneri" width="52" height="52" />
       <div class="titles">
         <h1 id="club-name">AC Rossoneri</h1>
         <p id="team-name">Junioren D-9 schwarz</p>
@@ -64,6 +65,7 @@
     <!-- SPIELE -->
     <section id="tab-spiele" class="panel" role="tabpanel" hidden>
       <h2>Spiele</h2>
+      <select id="team-filter" class="team-filter" aria-label="Team wählen"></select>
       <ul class="match-list" id="match-list"></ul>
     </section>
 

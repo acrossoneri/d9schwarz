@@ -194,7 +194,7 @@ def main():
     standings = compute_standings(games)
     group_name = extract_group_name(html)
 
-    write_json(DATA / "matches.json", {"updated": now, "matches": our})
+    write_json(DATA / "matches.json", {"updated": now, "matches": games})
     write_json(DATA / "standings.json",
                {"updated": now, "group": group_name, "rows": standings})
 

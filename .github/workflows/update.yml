@@ -10,8 +10,8 @@ name: Update data
 # Times are UTC (Swiss local = UTC+1 winter / +2 summer).
 on:
   schedule:
-    - cron: "*/20 5-17 * * 6"   # Saturdays (match day) every 20 min, 05:00-17:59 UTC
-    - cron: "0 4 * * *"         # once daily as a baseline
+    - cron: "0 * * * *"          # hourly
+    - cron: "*/20 5-17 * * 6"    # Saturdays (match day) every 20 min, 05:00-17:59 UTC
   workflow_dispatch:            # manual trigger from the Actions tab
 
 concurrency:

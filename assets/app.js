@@ -43,8 +43,6 @@ function renderHeader() {
   document.getElementById("team-name").textContent = c.teamName || "";
   document.getElementById("season-label").textContent = c.season || "";
   document.title = `${c.clubName} · ${c.teamName}`;
-  const crest = document.querySelector(".crest");
-  if (crest) crest.textContent = (c.clubName || "ACR").split(/\s+/).map(w => w[0]).join("").slice(0, 3).toUpperCase();
 
   const stamp = (DATA.matches && DATA.matches.updated) || c.lastUpdated;
   if (stamp) document.getElementById("updated-label").textContent = "Stand: " + fmtStamp(stamp);
@@ -56,6 +54,29 @@ function fmtStamp(s) {
   const m = String(s).match(/(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}))?/);
   if (!m) return s;
   return m[4] ? `${m[3]}.${m[2]}.${m[1]}, ${m[4]}:${m[5]}` : `${m[3]}.${m[2]}.${m[1]}`;
+}
+function fmtStampFromISO(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return null;
+  return new Intl.DateTimeFormat("de-CH", {
+    day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
+  }).format(d);
+}
+
+// Show when the auto-updater last ran, read from the GitHub Actions API (no commit needed).
+let lastCheckedAt = 0;
+async function updateLastChecked() {
+  if (Date.now() - lastCheckedAt < 90000) return;
+  lastCheckedAt = Date.now();
+  try {
+    const r = await fetch("https://api.github.com/repos/acrossoneri/d9schwarz/actions/runs?per_page=1",
+      { cache: "no-store" });
+    if (!r.ok) return;
+    const j = await r.json();
+    const run = j.workflow_runs && j.workflow_runs[0];
+    const s = run && fmtStampFromISO(run.run_started_at || run.updated_at);
+    if (s) document.getElementById("updated-label").textContent = "Zuletzt geprüft: " + s;
+  } catch (e) { /* keep the fallback "Stand:" label */ }
 }
 
 function renderStandings() {
@@ -82,24 +103,50 @@ function renderStandings() {
   });
 }
 
+function currentFilter() {
+  const sel = document.getElementById("team-filter");
+  return sel && sel.value ? sel.value : "__us__";
+}
+
+// Fill the team dropdown: our team (default) -> "Alle Teams" -> every other team.
+function populateTeamFilter() {
+  const sel = document.getElementById("team-filter");
+  if (!sel) return;
+  const our = DATA.config && DATA.config.ourTeam;
+  const all = (DATA.matches && DATA.matches.matches) || [];
+  const teams = [...new Set(all.flatMap(m => [m.home, m.away]))].sort((a, b) => a.localeCompare(b));
+  const others = teams.filter(t => t !== our);
+  const prev = sel.value;
+  let html = our ? `<option value="__us__">${esc(our)}</option>` : "";
+  html += `<option value="__all__">Alle Teams</option>`;
+  html += others.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join("");
+  sel.innerHTML = html;
+  sel.value = [...sel.options].some(o => o.value === prev) ? prev : "__us__";
+}
+
 function renderMatches() {
-  const matches = (DATA.matches && DATA.matches.matches) || [];
+  const all = (DATA.matches && DATA.matches.matches) || [];
+  const our = DATA.config && DATA.config.ourTeam;
+  const f = currentFilter();
+  let list = all;
+  if (f === "__us__") list = all.filter(m => m.home === our || m.away === our);
+  else if (f !== "__all__") list = all.filter(m => m.home === f || m.away === f);
+
   // One continuous timeline, oldest first.
-  const sorted = [...matches].sort((a, b) =>
+  const sorted = [...list].sort((a, b) =>
     (a.date + "T" + (a.time || "00:00")).localeCompare(b.date + "T" + (b.time || "00:00")));
 
-  const list = document.getElementById("match-list");
-  list.innerHTML = "";
+  const el = document.getElementById("match-list");
+  el.innerHTML = "";
   if (!sorted.length) {
-    list.innerHTML = `<li class="hint">Keine Spiele erfasst.</li>`;
+    el.innerHTML = `<li class="hint">Keine Spiele erfasst.</li>`;
     return;
   }
-
   const nextId = findNextMatchId(sorted);
   sorted.forEach(m => {
     const li = matchCard(m, m.status === "played");
     if (m.id === nextId) { li.classList.add("is-next"); li.id = "next-match"; }
-    list.appendChild(li);
+    el.appendChild(li);
   });
 }
 
@@ -265,9 +312,11 @@ async function loadAndRender() {
   DATA.goals = goals;
 
   renderHeader();
+  populateTeamFilter();
   renderStandings();
   renderMatches();
   renderScorers();
+  updateLastChecked();
 }
 
 let refreshing = false;
@@ -301,6 +350,8 @@ function init() {
   setupTabs();
   const btn = document.getElementById("refresh-btn");
   if (btn) btn.addEventListener("click", () => refresh(true));
+  const filter = document.getElementById("team-filter");
+  if (filter) filter.addEventListener("change", () => { renderMatches(); scrollToNextMatch(); });
   document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
   window.addEventListener("focus", () => refresh());
   refresh(true);
