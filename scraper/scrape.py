@@ -105,6 +105,20 @@ def parse_group_games(html):
     return games
 
 
+def write_json(path, payload):
+    """Write JSON, but keep the previous 'updated' timestamp when nothing else
+    changed — so unchanged runs produce a byte-identical file and no git commit."""
+    if path.exists():
+        try:
+            old = json.loads(path.read_text(encoding="utf-8"))
+            if {k: v for k, v in old.items() if k != "updated"} == \
+               {k: v for k, v in payload.items() if k != "updated"}:
+                payload = {**payload, "updated": old.get("updated", payload.get("updated"))}
+        except Exception:
+            pass
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
 def extract_group_name(html, default="Junioren D-9"):
     """Pull the official championship/group name, e.g.
     'Junioren D-9 - Stärkeklasse 2 - Herbstrunde - Gruppe 3'."""
@@ -180,13 +194,9 @@ def main():
     standings = compute_standings(games)
     group_name = extract_group_name(html)
 
-    (DATA / "matches.json").write_text(
-        json.dumps({"updated": now, "matches": our}, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8")
-    (DATA / "standings.json").write_text(
-        json.dumps({"updated": now, "group": group_name,
-                    "rows": standings}, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8")
+    write_json(DATA / "matches.json", {"updated": now, "matches": our})
+    write_json(DATA / "standings.json",
+               {"updated": now, "group": group_name, "rows": standings})
 
     played = sum(1 for g in our if g["status"] == "played")
     print(f"OK  {len(games)} group games | our team: {len(our)} games "
