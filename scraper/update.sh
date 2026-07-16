@@ -17,5 +17,5 @@ if git diff --staged --quiet; then
 else
   git commit -m "data: update $(date '+%Y-%m-%d %H:%M')"
   git push
-  echo "» Aktualisiert & veröffentlicht → https://seiimeen.github.io/acrossoneri-d9/"
+  echo "» Aktualisiert & veröffentlicht → https://acrossoneri.github.io/d9schwarz/"
 fi
