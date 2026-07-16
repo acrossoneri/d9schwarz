@@ -35,16 +35,24 @@ UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
 WIN, DRAW = 3, 1  # points (standard 3-1-0)
 
 
-def fetch(page, url):
-    """Load a matchcenter URL, waiting for the Cloudflare challenge to clear."""
-    page.goto(url, wait_until="domcontentloaded", timeout=45000)
-    html = page.content()
-    for _ in range(12):
-        page.wait_for_timeout(2000)
-        html = page.content()
-        title = (page.title() or "").lower()
-        if len(html) > 8000 and "moment" not in title:
-            return html
+def _looks_real(html, title):
+    t = (title or "").lower()
+    bad = ("moment" in t or "attention required" in t or "just a moment" in html.lower())
+    return len(html) > 8000 and not bad
+
+
+def fetch(page, url, tries=3):
+    """Load a matchcenter URL, patiently waiting for the Cloudflare challenge to clear.
+    Retries a few times (the clearance cookie is kept across attempts on the same page)."""
+    html = ""
+    for attempt in range(tries):
+        page.goto(url, wait_until="domcontentloaded", timeout=60000)
+        for _ in range(20):  # up to ~40s per attempt
+            page.wait_for_timeout(2000)
+            html = page.content()
+            if _looks_real(html, page.title()):
+                return html
+        page.wait_for_timeout(3000)  # brief backoff, then retry
     return html
 
 
@@ -147,10 +155,19 @@ def compute_standings(games):
 def main():
     now = datetime.now(timezone.utc).astimezone().strftime("%Y-%m-%d %H:%M")
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
-        page = browser.new_context(
-            locale="de-CH", user_agent=UA, viewport={"width": 1280, "height": 900}
-        ).new_page()
+        browser = p.chromium.launch(headless=True, args=[
+            "--no-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-blink-features=AutomationControlled",
+        ])
+        ctx = browser.new_context(
+            locale="de-CH", timezone_id="Europe/Zurich", user_agent=UA,
+            viewport={"width": 1360, "height": 900},
+            extra_http_headers={"Accept-Language": "de-CH,de;q=0.9,en;q=0.8"},
+        )
+        ctx.add_init_script(
+            "Object.defineProperty(navigator,'webdriver',{get:()=>undefined});")
+        page = ctx.new_page()
         html = fetch(page, SPIELPLAN_URL)
         browser.close()
 
