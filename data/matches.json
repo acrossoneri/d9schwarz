@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-17 18:47",
+  "updated": "2026-07-17 21:39",
   "matches": [
     {
       "id": "145012",
@@ -35,23 +35,23 @@
       "status": "scheduled"
     },
     {
-      "id": "145013",
-      "date": "2026-08-23",
-      "time": "10:00",
-      "round": "So 23.08.2026",
-      "home": "FC Zeiningen",
-      "away": "FC Kaiseraugst",
-      "homeScore": null,
-      "awayScore": null,
-      "status": "scheduled"
-    },
-    {
       "id": "145016",
       "date": "2026-08-23",
       "time": "11:00",
       "round": "So 23.08.2026",
       "home": "FC Möhlin-Riburg/ACLI D-13 blau",
       "away": "FC Frenkendorf weiss",
+      "homeScore": null,
+      "awayScore": null,
+      "status": "scheduled"
+    },
+    {
+      "id": "145013",
+      "date": "2026-08-26",
+      "time": "18:30",
+      "round": "Mi 26.08.2026",
+      "home": "FC Zeiningen",
+      "away": "FC Kaiseraugst",
       "homeScore": null,
       "awayScore": null,
       "status": "scheduled"
