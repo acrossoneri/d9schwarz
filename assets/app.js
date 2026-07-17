@@ -2,7 +2,7 @@
    Loads local JSON and renders Tabelle, Spiele and Torschützen.
    No framework, no build step. */
 
-const DATA = { config: null, standings: null, matches: null, goals: null };
+const DATA = { config: null, standings: null, matches: null };
 
 /* ---------- helpers ---------- */
 
@@ -103,31 +103,34 @@ function renderStandings() {
   });
 }
 
-function currentFilter() {
-  const sel = document.getElementById("team-filter");
+function filterValue(id) {
+  const sel = document.getElementById(id);
   return sel && sel.value ? sel.value : "__us__";
 }
 
-// Fill the team dropdown: our team (default) -> "Alle Teams" -> every other team.
-function populateTeamFilter() {
-  const sel = document.getElementById("team-filter");
-  if (!sel) return;
+// Options for a team dropdown: our team (default) -> "Alle Teams" -> every other team.
+function teamOptionsHTML() {
   const our = DATA.config && DATA.config.ourTeam;
   const all = (DATA.matches && DATA.matches.matches) || [];
   const teams = [...new Set(all.flatMap(m => [m.home, m.away]))].sort((a, b) => a.localeCompare(b));
   const others = teams.filter(t => t !== our);
-  const prev = sel.value;
   let html = our ? `<option value="__us__">${esc(our)}</option>` : "";
   html += `<option value="__all__">Alle Teams</option>`;
   html += others.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join("");
-  sel.innerHTML = html;
+  return html;
+}
+function populateSelect(id) {
+  const sel = document.getElementById(id);
+  if (!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = teamOptionsHTML();
   sel.value = [...sel.options].some(o => o.value === prev) ? prev : "__us__";
 }
 
 function renderMatches() {
   const all = (DATA.matches && DATA.matches.matches) || [];
   const our = DATA.config && DATA.config.ourTeam;
-  const f = currentFilter();
+  const f = filterValue("team-filter");
   let list = all;
   if (f === "__us__") list = all.filter(m => m.home === our || m.away === our);
   else if (f !== "__all__") list = all.filter(m => m.home === f || m.away === f);
@@ -206,39 +209,49 @@ function matchCard(m, isPlayed) {
 }
 
 function renderGoalDetail(m) {
-  const goals = (DATA.goals && DATA.goals[m.id]) || [];
+  const scorers = m.scorers || [];
   let html = m.venue ? `<p class="venue">📍 ${esc(m.venue)} · ${fmtDateLongSafe(m.date)}</p>` : "";
-  if (!goals.length) {
+  if (!scorers.length) {
     html += `<p class="none">Keine Torschützen erfasst.</p>`;
     return html;
   }
-  html += `<strong>Unsere Torschützen</strong><ul>`;
-  goals.forEach(g => {
-    html += `<li><span>⚽ ${esc(g.player)}</span><span class="min">${g.minute ? esc(g.minute) + "'" : ""}</span></li>`;
+  // Group by team (home first, then away), like a game report.
+  [m.home, m.away].forEach(team => {
+    const list = scorers.filter(g => g && g.player && g.team === team);
+    if (!list.length) return;
+    html += `<strong${isUs(team) ? ' class="us"' : ""}>${esc(team)}</strong><ul>`;
+    list.forEach(g => {
+      html += `<li><span>⚽ ${esc(g.player)}</span><span class="min">${g.minute ? esc(g.minute) + "'" : ""}</span></li>`;
+    });
+    html += `</ul>`;
   });
-  html += `</ul>`;
   return html;
 }
 
 function renderScorers() {
-  const matches = (DATA.matches && DATA.matches.matches) || [];
-  const goals = DATA.goals || {};
-  const our = DATA.config ? DATA.config.ourTeam : null;
+  const all = (DATA.matches && DATA.matches.matches) || [];
+  const our = DATA.config && DATA.config.ourTeam;
+  const f = filterValue("scorer-filter");
+  const showTeam = f === "__all__";
 
-  // player -> { total, vs: Map(opponent -> count) }
+  // key = team||player -> { player, team, total, vs: Map(opponent -> count) }
   const stats = new Map();
-  matches.forEach(m => {
-    const opponent = m.home === our ? m.away : m.home;
-    (goals[m.id] || []).forEach(g => {
+  all.forEach(m => {
+    (m.scorers || []).forEach(g => {
       if (!g || !g.player) return;
-      let s = stats.get(g.player);
-      if (!s) { s = { total: 0, vs: new Map() }; stats.set(g.player, s); }
+      const team = g.team || "";
+      if (f === "__us__" && team !== our) return;
+      if (f !== "__us__" && f !== "__all__" && team !== f) return;
+      const opponent = m.home === team ? m.away : m.home;
+      const key = team + "||" + g.player;
+      let s = stats.get(key);
+      if (!s) { s = { player: g.player, team, total: 0, vs: new Map() }; stats.set(key, s); }
       s.total += 1;
-      s.vs.set(opponent, (s.vs.get(opponent) || 0) + 1);
+      if (opponent) s.vs.set(opponent, (s.vs.get(opponent) || 0) + 1);
     });
   });
 
-  const ranked = [...stats.entries()].sort((a, b) => b[1].total - a[1].total || a[0].localeCompare(b[0]));
+  const ranked = [...stats.values()].sort((a, b) => b.total - a.total || a.player.localeCompare(b.player));
 
   const list = document.getElementById("scorer-list");
   list.innerHTML = "";
@@ -246,7 +259,7 @@ function renderScorers() {
     list.innerHTML = `<li class="hint">Noch keine Tore erfasst.</li>`;
     return;
   }
-  ranked.forEach(([player, s], i) => {
+  ranked.forEach((s, i) => {
     const vs = [...s.vs.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
     const li = document.createElement("li");
     li.className = "scorer clickable";
@@ -254,9 +267,12 @@ function renderScorers() {
     const head = document.createElement("button");
     head.type = "button";
     head.className = "scorer-head";
+    const nameHtml = showTeam
+      ? `<span class="sc-name">${esc(s.player)}<span class="sc-team">${esc(s.team)}</span></span>`
+      : `<span class="sc-name">${esc(s.player)}</span>`;
     head.innerHTML =
       `<span class="scorer-rank">${i + 1}</span>` +
-      `<span class="sc-name">${esc(player)}</span>` +
+      nameHtml +
       `<span class="sc-goals">${s.total}<span>${s.total === 1 ? "Tor" : "Tore"}</span></span>` +
       `<span class="chev">▾</span>`;
 
@@ -311,19 +327,18 @@ function showTeamGames(team) {
 /* ---------- init ---------- */
 
 async function loadAndRender() {
-  const [config, standings, matches, goals] = await Promise.all([
+  const [config, standings, matches] = await Promise.all([
     loadJSON("data/config.json"),
     loadJSON("data/standings.json"),
     loadJSON("data/matches.json"),
-    loadJSON("data/goals.json"),
   ]);
   DATA.config = config;
   DATA.standings = standings;
   DATA.matches = matches;
-  DATA.goals = goals;
 
   renderHeader();
-  populateTeamFilter();
+  populateSelect("team-filter");
+  populateSelect("scorer-filter");
   renderStandings();
   renderMatches();
   renderScorers();
@@ -363,6 +378,8 @@ function init() {
   if (btn) btn.addEventListener("click", () => refresh(true));
   const filter = document.getElementById("team-filter");
   if (filter) filter.addEventListener("change", () => { renderMatches(); scrollToNextMatch(); });
+  const scorerFilter = document.getElementById("scorer-filter");
+  if (scorerFilter) scorerFilter.addEventListener("change", () => renderScorers());
   const standings = document.getElementById("standings-table");
   if (standings) standings.addEventListener("click", (e) => {
     const link = e.target.closest(".team-link");

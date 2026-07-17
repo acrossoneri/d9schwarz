@@ -32,8 +32,7 @@
   <nav class="tabs wrap" role="tablist" aria-label="Ansichten">
     <button class="tab is-active" role="tab" aria-selected="true" data-tab="tabelle">Tabelle</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="spiele">Spiele</button>
-    <!-- Torschützen-Tab vorerst ausgeblendet – zum Aktivieren einfach das `hidden` entfernen. -->
-    <button class="tab" role="tab" aria-selected="false" data-tab="torschuetzen" hidden>Torschützen</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="torschuetzen">Torschützen</button>
   </nav>
 
   <main class="wrap">
@@ -72,6 +71,7 @@
     <!-- TORSCHÜTZEN -->
     <section id="tab-torschuetzen" class="panel" role="tabpanel" hidden>
       <h2>Torschützen</h2>
+      <select id="scorer-filter" class="team-filter" aria-label="Team wählen"></select>
       <ol class="scorer-list" id="scorer-list"></ol>
     </section>
   </main>

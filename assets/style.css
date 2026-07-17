@@ -181,6 +181,8 @@ table.standings { width: 100%; border-collapse: collapse; background: var(--card
 .match-goals li { display: flex; justify-content: space-between; font-size: .88rem; }
 .match-goals li .min { color: var(--muted); font-variant-numeric: tabular-nums; }
 .match-goals .none { color: var(--muted); font-size: .84rem; font-style: italic; }
+.match-goals strong { display: block; font-size: .82rem; margin: 8px 0 4px; }
+.match-goals strong.us { color: var(--red); }
 
 /* Scorers */
 .scorer-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
@@ -195,6 +197,7 @@ table.standings { width: 100%; border-collapse: collapse; background: var(--card
 }
 .scorer-rank { font-weight: 800; color: var(--red); width: 26px; text-align: center; font-variant-numeric: tabular-nums; }
 .scorer .sc-name { font-weight: 600; }
+.sc-name .sc-team { display: block; font-weight: 500; color: var(--muted); font-size: .72rem; margin-top: 1px; }
 .scorer .sc-goals { font-weight: 800; text-align: right; }
 .scorer .sc-goals span { font-weight: 500; color: var(--muted); font-size: .8rem; margin-left: 4px; }
 .scorer .chev { color: var(--muted); font-size: .8rem; }
