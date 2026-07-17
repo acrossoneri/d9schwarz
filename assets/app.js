@@ -359,13 +359,8 @@ async function refresh(force = false) {
     lastLoad = Date.now();
     document.getElementById("error-box").hidden = true;
   } catch (err) {
-    console.error(err);
-    showError(
-      `<strong>Daten konnten nicht geladen werden.</strong><br>` +
-      `Wird die Seite über <code>file://</code> geöffnet, blockiert der Browser lokale JSON-Dateien. ` +
-      `Über http(s) ausliefern (z.&nbsp;B. <code>python3 -m http.server 8000</code>). ` +
-      `(Fehler: ${esc(err.message)})`
-    );
+    console.error(err); // details stay in the console, not on the page
+    showError(`<strong>Daten konnten momentan nicht geladen werden.</strong><br>Bitte versuche es später erneut.`);
   } finally {
     refreshing = false;
     if (btn) btn.classList.remove("spin");
