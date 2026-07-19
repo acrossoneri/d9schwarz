@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-19 11:01",
+  "updated": "2026-07-19 12:43",
   "matches": [
     {
       "id": "145012",
@@ -167,17 +167,6 @@
       "status": "scheduled"
     },
     {
-      "id": "145027",
-      "date": "2026-09-12",
-      "time": null,
-      "round": "Sa 12.09.2026",
-      "home": "FC Lausen 72 rot",
-      "away": "FC Liestal weiss",
-      "homeScore": null,
-      "awayScore": null,
-      "status": "scheduled"
-    },
-    {
       "id": "145030",
       "date": "2026-09-12",
       "time": null,
@@ -217,6 +206,17 @@
       "round": "So 13.09.2026",
       "home": "FC Zeiningen",
       "away": "FC Wallbach rot",
+      "homeScore": null,
+      "awayScore": null,
+      "status": "scheduled"
+    },
+    {
+      "id": "145027",
+      "date": "2026-09-13",
+      "time": "10:30",
+      "round": "So 13.09.2026",
+      "home": "FC Lausen 72 rot",
+      "away": "FC Liestal weiss",
       "homeScore": null,
       "awayScore": null,
       "status": "scheduled"
@@ -398,17 +398,6 @@
       "status": "scheduled"
     },
     {
-      "id": "145047",
-      "date": "2026-10-24",
-      "time": null,
-      "round": "Sa 24.10.2026",
-      "home": "FC Lausen 72 rot",
-      "away": "FC Kaiseraugst",
-      "homeScore": null,
-      "awayScore": null,
-      "status": "scheduled"
-    },
-    {
       "id": "145051",
       "date": "2026-10-24",
       "time": "10:00",
@@ -437,6 +426,17 @@
       "round": "So 25.10.2026",
       "home": "FC Zeiningen",
       "away": "FC Liestal weiss",
+      "homeScore": null,
+      "awayScore": null,
+      "status": "scheduled"
+    },
+    {
+      "id": "145047",
+      "date": "2026-10-25",
+      "time": "10:30",
+      "round": "So 25.10.2026",
+      "home": "FC Lausen 72 rot",
+      "away": "FC Kaiseraugst",
       "homeScore": null,
       "awayScore": null,
       "status": "scheduled"
