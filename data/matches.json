@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-17 21:39",
+  "updated": "2026-07-19 11:01",
   "matches": [
     {
       "id": "145012",
@@ -79,23 +79,23 @@
       "status": "scheduled"
     },
     {
-      "id": "145017",
-      "date": "2026-08-29",
-      "time": null,
-      "round": "Sa 29.08.2026",
-      "home": "FC Lausen 72 rot",
-      "away": "FC Frenkendorf weiss",
-      "homeScore": null,
-      "awayScore": null,
-      "status": "scheduled"
-    },
-    {
       "id": "145019",
       "date": "2026-08-29",
       "time": "09:30",
       "round": "Sa 29.08.2026",
       "home": "FC Gelterkinden weiss",
       "away": "AC Rossoneri schwarz",
+      "homeScore": null,
+      "awayScore": null,
+      "status": "scheduled"
+    },
+    {
+      "id": "145017",
+      "date": "2026-08-30",
+      "time": "10:30",
+      "round": "So 30.08.2026",
+      "home": "FC Lausen 72 rot",
+      "away": "FC Frenkendorf weiss",
       "homeScore": null,
       "awayScore": null,
       "status": "scheduled"
@@ -288,17 +288,6 @@
       "status": "scheduled"
     },
     {
-      "id": "145037",
-      "date": "2026-09-26",
-      "time": null,
-      "round": "Sa 26.09.2026",
-      "home": "FC Lausen 72 rot",
-      "away": "FC Gelterkinden weiss",
-      "homeScore": null,
-      "awayScore": null,
-      "status": "scheduled"
-    },
-    {
       "id": "145041",
       "date": "2026-09-26",
       "time": "11:00",
@@ -327,6 +316,17 @@
       "round": "So 27.09.2026",
       "home": "FC Zeiningen",
       "away": "FC Möhlin-Riburg/ACLI D-13 blau",
+      "homeScore": null,
+      "awayScore": null,
+      "status": "scheduled"
+    },
+    {
+      "id": "145037",
+      "date": "2026-09-27",
+      "time": "10:30",
+      "round": "So 27.09.2026",
+      "home": "FC Lausen 72 rot",
+      "away": "FC Gelterkinden weiss",
       "homeScore": null,
       "awayScore": null,
       "status": "scheduled"
