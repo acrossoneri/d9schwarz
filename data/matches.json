@@ -1,17 +1,6 @@
 {
-  "updated": "2026-07-19 12:43",
+  "updated": "2026-07-26 10:25",
   "matches": [
-    {
-      "id": "145012",
-      "date": "2026-08-22",
-      "time": null,
-      "round": "Sa 22.08.2026",
-      "home": "SV Sissach b",
-      "away": "FC Lausen 72 rot",
-      "homeScore": null,
-      "awayScore": null,
-      "status": "scheduled"
-    },
     {
       "id": "145015",
       "date": "2026-08-22",
@@ -30,6 +19,17 @@
       "round": "Sa 22.08.2026",
       "home": "FC Wallbach rot",
       "away": "FC Gelterkinden weiss",
+      "homeScore": null,
+      "awayScore": null,
+      "status": "scheduled"
+    },
+    {
+      "id": "145012",
+      "date": "2026-08-22",
+      "time": "13:00",
+      "round": "Sa 22.08.2026",
+      "home": "SV Sissach b",
+      "away": "FC Lausen 72 rot",
       "homeScore": null,
       "awayScore": null,
       "status": "scheduled"
@@ -57,17 +57,6 @@
       "status": "scheduled"
     },
     {
-      "id": "145021",
-      "date": "2026-08-29",
-      "time": null,
-      "round": "Sa 29.08.2026",
-      "home": "SV Sissach b",
-      "away": "FC Zeiningen",
-      "homeScore": null,
-      "awayScore": null,
-      "status": "scheduled"
-    },
-    {
       "id": "145018",
       "date": "2026-08-29",
       "time": null,
@@ -85,6 +74,17 @@
       "round": "Sa 29.08.2026",
       "home": "FC Gelterkinden weiss",
       "away": "AC Rossoneri schwarz",
+      "homeScore": null,
+      "awayScore": null,
+      "status": "scheduled"
+    },
+    {
+      "id": "145021",
+      "date": "2026-08-29",
+      "time": "14:00",
+      "round": "Sa 29.08.2026",
+      "home": "SV Sissach b",
+      "away": "FC Zeiningen",
       "homeScore": null,
       "awayScore": null,
       "status": "scheduled"
@@ -277,17 +277,6 @@
       "status": "scheduled"
     },
     {
-      "id": "145039",
-      "date": "2026-09-26",
-      "time": null,
-      "round": "Sa 26.09.2026",
-      "home": "SV Sissach b",
-      "away": "FC Frenkendorf weiss",
-      "homeScore": null,
-      "awayScore": null,
-      "status": "scheduled"
-    },
-    {
       "id": "145041",
       "date": "2026-09-26",
       "time": "11:00",
@@ -305,6 +294,17 @@
       "round": "Sa 26.09.2026",
       "home": "FC Kaiseraugst",
       "away": "FC Liestal weiss",
+      "homeScore": null,
+      "awayScore": null,
+      "status": "scheduled"
+    },
+    {
+      "id": "145039",
+      "date": "2026-09-26",
+      "time": "14:00",
+      "round": "Sa 26.09.2026",
+      "home": "SV Sissach b",
+      "away": "FC Frenkendorf weiss",
       "homeScore": null,
       "awayScore": null,
       "status": "scheduled"
@@ -387,17 +387,6 @@
       "status": "scheduled"
     },
     {
-      "id": "145048",
-      "date": "2026-10-24",
-      "time": null,
-      "round": "Sa 24.10.2026",
-      "home": "SV Sissach b",
-      "away": "FC Gelterkinden weiss",
-      "homeScore": null,
-      "awayScore": null,
-      "status": "scheduled"
-    },
-    {
       "id": "145051",
       "date": "2026-10-24",
       "time": "10:00",
@@ -415,6 +404,17 @@
       "round": "Sa 24.10.2026",
       "home": "FC Wallbach rot",
       "away": "FC Frenkendorf weiss",
+      "homeScore": null,
+      "awayScore": null,
+      "status": "scheduled"
+    },
+    {
+      "id": "145048",
+      "date": "2026-10-24",
+      "time": "12:00",
+      "round": "Sa 24.10.2026",
+      "home": "SV Sissach b",
+      "away": "FC Gelterkinden weiss",
       "homeScore": null,
       "awayScore": null,
       "status": "scheduled"
