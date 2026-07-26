@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-26 10:25",
+  "updated": "2026-07-26 11:52",
   "matches": [
     {
       "id": "145015",
@@ -167,17 +167,6 @@
       "status": "scheduled"
     },
     {
-      "id": "145030",
-      "date": "2026-09-12",
-      "time": null,
-      "round": "Sa 12.09.2026",
-      "home": "SV Sissach b",
-      "away": "AC Rossoneri schwarz",
-      "homeScore": null,
-      "awayScore": null,
-      "status": "scheduled"
-    },
-    {
       "id": "145028",
       "date": "2026-09-12",
       "time": "09:00",
@@ -217,6 +206,17 @@
       "round": "So 13.09.2026",
       "home": "FC Lausen 72 rot",
       "away": "FC Liestal weiss",
+      "homeScore": null,
+      "awayScore": null,
+      "status": "scheduled"
+    },
+    {
+      "id": "145030",
+      "date": "2026-09-13",
+      "time": "12:00",
+      "round": "So 13.09.2026",
+      "home": "SV Sissach b",
+      "away": "AC Rossoneri schwarz",
       "homeScore": null,
       "awayScore": null,
       "status": "scheduled"
