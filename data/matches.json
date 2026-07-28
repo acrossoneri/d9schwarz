@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-26 11:52",
+  "updated": "2026-07-28 07:29",
   "matches": [
     {
       "id": "145015",
@@ -244,23 +244,23 @@
       "status": "scheduled"
     },
     {
-      "id": "145032",
-      "date": "2026-09-19",
-      "time": "11:00",
-      "round": "Sa 19.09.2026",
-      "home": "FC Wallbach rot",
-      "away": "FC Lausen 72 rot",
-      "homeScore": null,
-      "awayScore": null,
-      "status": "scheduled"
-    },
-    {
       "id": "145034",
       "date": "2026-09-20",
       "time": "11:00",
       "round": "So 20.09.2026",
       "home": "FC Möhlin-Riburg/ACLI D-13 blau",
       "away": "SV Sissach b",
+      "homeScore": null,
+      "awayScore": null,
+      "status": "scheduled"
+    },
+    {
+      "id": "145032",
+      "date": "2026-09-20",
+      "time": "13:00",
+      "round": "So 20.09.2026",
+      "home": "FC Wallbach rot",
+      "away": "FC Lausen 72 rot",
       "homeScore": null,
       "awayScore": null,
       "status": "scheduled"
