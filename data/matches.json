@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-29 17:01",
+  "updated": "2026-07-29 22:44",
   "matches": [
     {
       "id": "145015",
@@ -442,23 +442,23 @@
       "status": "scheduled"
     },
     {
-      "id": "145054",
-      "date": "2026-10-31",
-      "time": "10:00",
-      "round": "Sa 31.10.2026",
-      "home": "FC Liestal weiss",
-      "away": "FC Wallbach rot",
-      "homeScore": null,
-      "awayScore": null,
-      "status": "scheduled"
-    },
-    {
       "id": "145056",
       "date": "2026-10-31",
       "time": "10:00",
       "round": "Sa 31.10.2026",
       "home": "FC Kaiseraugst",
       "away": "SV Sissach b",
+      "homeScore": null,
+      "awayScore": null,
+      "status": "scheduled"
+    },
+    {
+      "id": "145054",
+      "date": "2026-10-31",
+      "time": "10:00",
+      "round": "Sa 31.10.2026",
+      "home": "FC Liestal weiss",
+      "away": "FC Wallbach rot",
       "homeScore": null,
       "awayScore": null,
       "status": "scheduled"
