@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-29 12:53",
+  "updated": "2026-07-29 17:01",
   "matches": [
     {
       "id": "145015",
@@ -222,23 +222,23 @@
       "status": "scheduled"
     },
     {
-      "id": "145036",
-      "date": "2026-09-19",
-      "time": "10:00",
-      "round": "Sa 19.09.2026",
-      "home": "FC Liestal weiss",
-      "away": "FC Gelterkinden weiss",
-      "homeScore": null,
-      "awayScore": null,
-      "status": "scheduled"
-    },
-    {
       "id": "145033",
       "date": "2026-09-19",
       "time": "10:00",
       "round": "Sa 19.09.2026",
       "home": "AC Rossoneri schwarz",
       "away": "FC Zeiningen",
+      "homeScore": null,
+      "awayScore": null,
+      "status": "scheduled"
+    },
+    {
+      "id": "145036",
+      "date": "2026-09-19",
+      "time": "10:00",
+      "round": "Sa 19.09.2026",
+      "home": "FC Liestal weiss",
+      "away": "FC Gelterkinden weiss",
       "homeScore": null,
       "awayScore": null,
       "status": "scheduled"
@@ -288,23 +288,23 @@
       "status": "scheduled"
     },
     {
-      "id": "145039",
-      "date": "2026-09-26",
-      "time": "14:00",
-      "round": "Sa 26.09.2026",
-      "home": "SV Sissach b",
-      "away": "FC Frenkendorf weiss",
-      "homeScore": null,
-      "awayScore": null,
-      "status": "scheduled"
-    },
-    {
       "id": "145038",
       "date": "2026-09-26",
       "time": "14:00",
       "round": "Sa 26.09.2026",
       "home": "FC Kaiseraugst",
       "away": "FC Liestal weiss",
+      "homeScore": null,
+      "awayScore": null,
+      "status": "scheduled"
+    },
+    {
+      "id": "145039",
+      "date": "2026-09-26",
+      "time": "14:00",
+      "round": "Sa 26.09.2026",
+      "home": "SV Sissach b",
+      "away": "FC Frenkendorf weiss",
       "homeScore": null,
       "awayScore": null,
       "status": "scheduled"
@@ -332,23 +332,23 @@
       "status": "scheduled"
     },
     {
-      "id": "145045",
-      "date": "2026-10-17",
-      "time": "10:00",
-      "round": "Sa 17.10.2026",
-      "home": "FC Liestal weiss",
-      "away": "SV Sissach b",
-      "homeScore": null,
-      "awayScore": null,
-      "status": "scheduled"
-    },
-    {
       "id": "145042",
       "date": "2026-10-17",
       "time": "10:00",
       "round": "Sa 17.10.2026",
       "home": "AC Rossoneri schwarz",
       "away": "FC Lausen 72 rot",
+      "homeScore": null,
+      "awayScore": null,
+      "status": "scheduled"
+    },
+    {
+      "id": "145045",
+      "date": "2026-10-17",
+      "time": "10:00",
+      "round": "Sa 17.10.2026",
+      "home": "FC Liestal weiss",
+      "away": "SV Sissach b",
       "homeScore": null,
       "awayScore": null,
       "status": "scheduled"
