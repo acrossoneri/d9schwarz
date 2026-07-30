@@ -7,9 +7,14 @@
   <meta name="description" content="Tabelle, Spielplan, Resultate und Torschützen der Junioren D-9 schwarz des AC Rossoneri." />
   <meta name="robots" content="noindex, nofollow" />
   <link rel="icon" href="assets/logo.png" />
-  <link rel="stylesheet" href="assets/style.css?v=20260730b" />
+  <link rel="stylesheet" href="assets/style.css?v=20260730c" />
 </head>
 <body>
+  <!--
+    Hallo! Wenn du hier drin herumsuchst: bitte mach nichts kaputt,
+    das ist für unsere Spieler. Danke! – AC Rossoneri, Junioren D-9 schwarz
+  -->
+
   <!-- LOGIN — shown until the data files can be decrypted -->
   <div id="login" class="login-screen" hidden>
     <form id="login-form" class="login-card" novalidate>
@@ -117,6 +122,13 @@
 
       <div id="scorer-editor" class="scorer-editor"></div>
       <button id="scorer-add" class="btn-secondary" type="button">+ Torschütze</button>
+      <datalist id="roster-list"></datalist>
+
+      <h2>Unsere Spieler</h2>
+      <p class="hint">Die Mannschaft von <span id="roster-team">unserem Team</span>.
+        Erfasste Namen erscheinen oben als Vorschlag, damit die Schreibweise stimmt.</p>
+      <div id="player-editor" class="scorer-editor"></div>
+      <button id="player-add" class="btn-secondary" type="button">+ Spieler</button>
 
       <div class="publish-box">
         <p id="publish-state" class="publish-state"></p>
@@ -147,14 +159,19 @@
         <p class="hint">Ohne Server kann die Seite nur über GitHub speichern — für
           Torschützen wie für Benutzer. Nötig ist ein <em>fine-grained personal access
           token</em> für das Repository <code>acrossoneri/d9schwarz</code> mit der
-          Berechtigung <code>Contents: Read and write</code>. Der Token bleibt nur auf
-          diesem Gerät.</p>
+          Berechtigung <code>Contents: Read and write</code>
+          (<a href="https://github.com/settings/personal-access-tokens/new"
+              target="_blank" rel="noopener noreferrer">Token erstellen</a>).
+          Er wird <strong>verschlüsselt in der Seite</strong> abgelegt, damit ihn alle
+          Admin-Geräte haben und niemand ihn je eintippen muss. Im Klartext stünde er
+          öffentlich lesbar da — und GitHub würde ihn automatisch sperren.</p>
         <div class="token-row">
           <input id="token-input" type="password" placeholder="github_pat_…"
                  autocomplete="off" spellcheck="false" />
           <button id="token-save" class="btn-secondary" type="button">Speichern</button>
         </div>
         <p id="token-state" class="hint"></p>
+        <button id="token-remove" class="btn-secondary btn-slim" type="button" hidden>Token entfernen</button>
       </details>
     </section>
   </main>
@@ -164,8 +181,8 @@
   </footer>
   </div><!-- /#app -->
 
-  <script src="assets/auth.js?v=20260730b"></script>
-  <script src="assets/app.js?v=20260730b"></script>
-  <script src="assets/admin.js?v=20260730b"></script>
+  <script src="assets/auth.js?v=20260730c"></script>
+  <script src="assets/app.js?v=20260730c"></script>
+  <script src="assets/admin.js?v=20260730c"></script>
 </body>
 </html>

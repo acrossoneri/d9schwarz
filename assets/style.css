@@ -289,18 +289,27 @@ table.standings { width: 100%; border-collapse: collapse; background: var(--card
     background: var(--card);
   }
   .sc-row .sc-player { grid-area: name; }
-  .sc-row .sc-team { grid-area: team; max-width: none; }
+  .sc-row select.sc-team { grid-area: team; max-width: none; }
   .sc-row .sc-min { grid-area: min; }
   .sc-row .sc-del { grid-area: del; }
+  /* a roster row is just name + delete, so it stays on one line */
+  .sc-row.player-row {
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "name del";
+    border: 0; padding: 0; background: none;
+  }
   /* the name gets its own line; role/password/delete sit underneath */
   .user-row .user-name { grid-column: 1 / -1; }
 }
-.sc-row input, .sc-team {
+.sc-row.player-row { grid-template-columns: 1fr auto; }
+/* `select.sc-team`, not `.sc-team` — the Torschützen list uses a <span> of the
+   same name for its subtitle, and it must not turn into a form control. */
+.sc-row input, select.sc-team {
   font: inherit; font-size: .9rem; color: var(--ink); min-width: 0;
   background: var(--card); border: 1px solid var(--line); border-radius: 9px; padding: 9px 10px;
 }
-.sc-team { max-width: 42vw; }
-.sc-row input:focus, .sc-team:focus { outline: 2px solid var(--red); outline-offset: 1px; }
+select.sc-team { max-width: 42vw; }
+.sc-row input:focus, select.sc-team:focus { outline: 2px solid var(--red); outline-offset: 1px; }
 .sc-del {
   appearance: none; cursor: pointer; width: 34px; height: 34px; border-radius: 9px;
   border: 1px solid var(--line); background: var(--card); color: var(--muted);

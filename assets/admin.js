@@ -13,12 +13,15 @@
 const ADMIN = (() => {
   const REPO = "acrossoneri/d9schwarz";
   const FILE = "data/scorers.enc.json";
+  const PLAYERS_FILE = "data/players.enc.json";
+  const ADMIN_FILE = "data/admin.enc.json";
   const AUTH_FILE = "data/auth.json";
   const TOKEN_KEY = "acr.ghtoken";
   const API = "https://api.github.com";
 
   let mounted = false;
-  let dirty = false;
+  let dirty = false;          // unsaved scorer edits
+  let dirtyPlayers = false;   // unsaved roster edits
   let selectedId = null;
 
   const el = id => document.getElementById(id);
@@ -27,9 +30,40 @@ const ADMIN = (() => {
 
   /* ---------- token ---------- */
 
-  const getToken = () => localStorage.getItem(TOKEN_KEY) || "";
-  const setToken = t => t ? localStorage.setItem(TOKEN_KEY, t)
-                          : localStorage.removeItem(TOKEN_KEY);
+  /* The token lives in data/admin.enc.json, encrypted with the master key, so every
+     admin device inherits it and nobody has to paste it. It is NOT in the source:
+     a plaintext token in a public repo is world-readable repo write access, and
+     GitHub's push protection/secret scanning would revoke it within minutes anyway.
+     A localStorage entry can override it per device. */
+  let repoToken = null;
+
+  async function loadRepoToken() {
+    try {
+      const a = await AUTH.decryptJSON(ADMIN_FILE);
+      repoToken = (a && a.ghToken) || null;
+    } catch { repoToken = null; }   // missing file is fine
+  }
+
+  const getToken = () => localStorage.getItem(TOKEN_KEY) || repoToken || "";
+  const setLocalToken = t => t ? localStorage.setItem(TOKEN_KEY, t)
+                               : localStorage.removeItem(TOKEN_KEY);
+
+  const maskToken = t => t.length > 12 ? t.slice(0, 7) + "…" + t.slice(-4) : "…";
+
+  function renderTokenState(message) {
+    const state = el("token-state");
+    const has = !!getToken();
+    const fromRepo = !localStorage.getItem(TOKEN_KEY) && !!repoToken;
+    if (state) {
+      state.textContent = message || (has
+        ? `Aktiv (${maskToken(getToken())}) — ${fromRepo
+            ? "verschlüsselt in der Seite gespeichert, gilt auf allen Admin-Geräten."
+            : "auf diesem Gerät gespeichert."} Kein Eingeben nötig.`
+        : "Kein Token — „Speichern“ lädt die Datei stattdessen herunter.");
+    }
+    const rm = el("token-remove");
+    if (rm) rm.hidden = !has;
+  }
 
   /* ---------- match picker ---------- */
 
@@ -92,6 +126,8 @@ const ADMIN = (() => {
     name.className = "sc-player";
     name.placeholder = "Name";
     name.autocomplete = "off";
+    // Suggests our squad while still allowing a typed-in opponent name.
+    name.setAttribute("list", "roster-list");
     name.value = (scorer && scorer.player) || "";
 
     const team = document.createElement("select");
@@ -189,6 +225,88 @@ const ADMIN = (() => {
     if (last) last.focus();
   }
 
+  /* ---------- our players ---------- */
+
+  const roster = () => (DATA.players && DATA.players.players) || [];
+
+  function renderPlayers() {
+    const box = el("player-editor");
+    if (!box) return;
+    const label = el("roster-team");
+    if (label) label.textContent = (DATA.config && DATA.config.ourTeam) || "unserem Team";
+    box.innerHTML = "";
+    const list = roster();
+    if (!list.length) {
+      box.appendChild(hint("Noch keine Spieler erfasst. Sie erscheinen dann beim "
+                         + "Erfassen der Torschützen als Vorschlag."));
+    }
+    list.forEach((player, index) => {
+      const row = document.createElement("div");
+      row.className = "sc-row player-row";
+
+      const name = document.createElement("input");
+      name.type = "text";
+      name.className = "sc-player";
+      name.placeholder = "Name";
+      name.autocomplete = "off";
+      name.value = player || "";
+      name.addEventListener("input", () => { commitPlayers(); markPlayersDirty(); });
+
+      const del = document.createElement("button");
+      del.type = "button";
+      del.className = "sc-del";
+      del.title = "Entfernen";
+      del.setAttribute("aria-label", `${player || "Spieler"} entfernen`);
+      del.textContent = "×";
+      del.addEventListener("click", () => {
+        commitPlayers();
+        roster().splice(index, 1);
+        markPlayersDirty();
+        renderPlayers();
+      });
+
+      row.append(name, del);
+      box.appendChild(row);
+    });
+    renderRosterOptions();
+  }
+
+  // Feeds the <datalist> the scorer name fields suggest from.
+  function renderRosterOptions() {
+    const dl = el("roster-list");
+    if (!dl) return;
+    dl.innerHTML = "";
+    [...new Set(roster().map(p => (p || "").trim()).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b))
+      .forEach(p => {
+        const o = document.createElement("option");
+        o.value = p;
+        dl.appendChild(o);
+      });
+  }
+
+  function commitPlayers() {
+    const box = el("player-editor");
+    if (!box) return;
+    DATA.players.players = [...box.querySelectorAll(".player-row .sc-player")]
+      .map(i => i.value);
+  }
+
+  function addPlayer() {
+    commitPlayers();
+    roster().push("");
+    markPlayersDirty();
+    renderPlayers();
+    const last = el("player-editor").querySelector(".player-row:last-of-type .sc-player");
+    if (last) last.focus();
+  }
+
+  function markPlayersDirty() {
+    dirtyPlayers = true;
+    renderRosterOptions();
+    renderStatus();
+  }
+
   /* ---------- state ---------- */
 
   function markDirty() {
@@ -204,18 +322,15 @@ const ADMIN = (() => {
   function renderStatus(message, kind) {
     const s = el("publish-state");
     if (s) {
+      const what = [dirty ? "Torschützen" : "", dirtyPlayers ? "Spieler" : ""].filter(Boolean);
       s.className = "publish-state" + (kind ? " " + kind : "");
       s.textContent = message
-        || (dirty ? "Ungespeicherte Änderungen." : "Alles gespeichert.");
+        || (what.length ? `Ungespeicherte Änderungen (${what.join(" und ")}).`
+                        : "Alles gespeichert.");
     }
     const btn = el("publish-btn");
-    if (btn) btn.disabled = busy || !dirty;
-    const tok = el("token-state");
-    if (tok) {
-      tok.textContent = getToken()
-        ? "Token gespeichert — Veröffentlichen geht direkt."
-        : "Kein Token — Speichern lädt die Datei herunter, du musst sie selbst committen.";
-    }
+    if (btn) btn.disabled = busy || !(dirty || dirtyPlayers);
+    renderTokenState();
   }
 
   /* ---------- publishing ---------- */
@@ -250,11 +365,11 @@ const ADMIN = (() => {
     return btoa(s);
   }
 
-  function download(text) {
+  function download(text, filename) {
     const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
     const a = document.createElement("a");
     a.href = url;
-    a.download = "scorers.enc.json";
+    a.download = filename || "scorers.enc.json";
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -262,6 +377,15 @@ const ADMIN = (() => {
   async function fileText() {
     commitRows();
     const env = await AUTH.encryptEnvelope(payload(), stamp());
+    return JSON.stringify(env, null, 2) + "\n";
+  }
+
+  async function playersFileText() {
+    commitPlayers();
+    // Trimmed, de-duplicated and sorted, so the file stays tidy and stable.
+    const clean = [...new Set(roster().map(p => (p || "").trim()).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b));
+    const env = await AUTH.encryptEnvelope({ players: clean }, stamp());
     return JSON.stringify(env, null, 2) + "\n";
   }
 
@@ -304,22 +428,44 @@ const ADMIN = (() => {
   const LIVE_SOON = "Für andere sichtbar, sobald GitHub Pages neu gebaut hat "
                   + "(etwa eine Minute).";
 
+  // Encrypt the token into the site. Returns null on success, else a message.
+  async function saveRepoToken(token) {
+    try {
+      const env = await AUTH.encryptEnvelope(token ? { ghToken: token } : {}, null);
+      return await commitFile(ADMIN_FILE, JSON.stringify(env, null, 2) + "\n",
+                              token ? "auth: GitHub-Token gesetzt"
+                                    : "auth: GitHub-Token entfernt");
+    } catch (err) {
+      console.error(err);
+      return "Token konnte nicht gespeichert werden.";
+    }
+  }
+
   async function publish() {
     busy = true;
     renderStatus("Wird veröffentlicht …");
     try {
-      const text = await fileText();
+      // Only touch what actually changed, so each publish is one small commit.
+      const jobs = [];
+      if (dirty) jobs.push([FILE, await fileText(), "data: Torschützen manuell erfasst"]);
+      if (dirtyPlayers) jobs.push([PLAYERS_FILE, await playersFileText(),
+                                   "data: Spielerliste aktualisiert"]);
+      if (!jobs.length) { busy = false; renderStatus(); return; }
+
       if (!getToken()) {
-        download(text);
+        jobs.forEach(([path, text]) => download(text, path.split("/").pop()));
         busy = false;
-        renderStatus("Datei heruntergeladen — bitte als " + FILE + " committen.", "ok");
+        renderStatus("Datei(en) heruntergeladen — bitte in data/ committen.", "ok");
         return;
       }
-      const err = await commitFile(FILE, text, "data: Torschützen manuell erfasst");
+      for (const [path, text, message] of jobs) {
+        const err = await commitFile(path, text, message);
+        if (err) { busy = false; renderStatus(err, "err"); return; }
+        if (path === FILE) dirty = false; else dirtyPlayers = false;
+      }
       busy = false;
-      if (err) { renderStatus(err, "err"); return; }
-      dirty = false;
       renderMatchPicker();
+      renderPlayers();
       renderStatus("Veröffentlicht. " + LIVE_SOON, "ok");
     } catch (err) {
       console.error(err);
@@ -459,38 +605,68 @@ const ADMIN = (() => {
       renderEditor();
     });
     el("scorer-add").addEventListener("click", addRow);
+    el("player-add").addEventListener("click", addPlayer);
     el("publish-btn").addEventListener("click", publish);
     el("user-add").addEventListener("click", addUser);
     el("new-pass").addEventListener("keydown", (e) => {
       if (e.key === "Enter") { e.preventDefault(); addUser(); }
     });
     el("download-btn").addEventListener("click", async () => {
-      try { download(await fileText()); }
-      catch (err) { console.error(err); renderStatus("Export fehlgeschlagen.", "err"); }
+      try {
+        download(await fileText(), "scorers.enc.json");
+        download(await playersFileText(), "players.enc.json");
+      } catch (err) { console.error(err); renderStatus("Export fehlgeschlagen.", "err"); }
     });
     el("token-save").addEventListener("click", async () => {
       const input = el("token-input");
-      const state = el("token-state");
       const value = input.value.trim();
-      setToken(value);
+      if (!value) { renderTokenState("Bitte zuerst einen Token einfügen."); return; }
+      setLocalToken(value);
       input.value = "";
-      if (!value) { renderStatus(); state.textContent = "Token entfernt."; return; }
-      state.textContent = "Token wird geprüft …";
+      renderTokenState("Token wird geprüft …");
       try {
         const r = await ghFetch(`/repos/${REPO}/contents/${FILE}`);
-        state.textContent = r.ok ? "Token funktioniert." : `Token abgelehnt (${r.status}).`;
-      } catch { state.textContent = "Token konnte nicht geprüft werden."; }
+        if (!r.ok) {
+          renderTokenState(`Token abgelehnt (${r.status}). Bitte Berechtigung `
+                         + "„Contents: Read and write“ prüfen.");
+          return;
+        }
+        // Store it encrypted in the site too, so other admin devices inherit it.
+        renderTokenState("Token gültig — wird für alle Admin-Geräte gespeichert …");
+        const err = await saveRepoToken(value);
+        renderTokenState(err || undefined);
+        if (!err) { repoToken = value; setLocalToken(""); renderTokenState(); }
+      } catch { renderTokenState("Token konnte nicht geprüft werden."); }
+    });
+
+    el("token-remove").addEventListener("click", async () => {
+      el("token-input").value = "";
+      setLocalToken("");
+      if (!repoToken) { renderTokenState("Token entfernt."); return; }
+      if (!confirm("Token auch für alle anderen Admin-Geräte entfernen?")) {
+        renderTokenState(); return;
+      }
+      renderTokenState("Wird entfernt …");
+      const err = await saveRepoToken(null);
+      if (err) { renderTokenState(err); return; }
+      repoToken = null;
+      renderTokenState("Token überall entfernt.");
     });
 
     // A half-typed scorer is easy to lose on a phone; warn before leaving.
     window.addEventListener("beforeunload", (e) => {
-      if (dirty) { e.preventDefault(); e.returnValue = ""; }
+      if (dirty || dirtyPlayers) { e.preventDefault(); e.returnValue = ""; }
     });
   }
 
   function unmount() {
     dirty = false;
+    dirtyPlayers = false;
     selectedId = null;
+    ["player-editor", "roster-list"].forEach(id => {
+      const box = el(id);
+      if (box) box.innerHTML = "";
+    });
     ["publish-state", "user-state"].forEach(id => {
       const s = el(id);
       if (s) s.textContent = "";
@@ -503,17 +679,25 @@ const ADMIN = (() => {
     if (list) list.innerHTML = "";
   }
 
-  function render() {
+  async function render() {
     if (!AUTH.isAdmin()) return;
     renderMatchPicker();
     renderEditor();
+    renderPlayers();
     renderStatus();
     renderUsers();
+    await loadRepoToken();
+    renderTokenState();
+    // Open the token box only on a device that has none — nudge once, then stay
+    // out of the way. Set here rather than in renderStatus so it never snaps
+    // shut while the box is being used.
+    const det = document.querySelector(".token-details");
+    if (det) det.open = !getToken();
   }
 
   return {
     mount, unmount, render,
-    isDirty: () => dirty,
-    discard: () => { dirty = false; },
+    isDirty: () => dirty || dirtyPlayers,
+    discard: () => { dirty = dirtyPlayers = false; },
   };
 })();

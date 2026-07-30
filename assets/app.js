@@ -2,7 +2,12 @@
    Loads local JSON and renders Tabelle, Spiele and Torschützen.
    No framework, no build step. */
 
-const DATA = { config: null, standings: null, matches: null, scorers: null };
+const DATA = { config: null, standings: null, matches: null, scorers: null, players: null };
+
+// A friendly note for anyone poking around in the sources.
+console.log(
+  "%c⚽ Bitte mach nichts kaputt, das ist für unsere Spieler.%c\nDanke! – AC Rossoneri, Junioren D-9 schwarz",
+  "font-weight:700;font-size:13px;color:#C8102E", "color:inherit;font-size:12px");
 
 /* ---------- helpers ---------- */
 
@@ -233,7 +238,7 @@ function renderScorers() {
   const f = filterValue("scorer-filter");
   const showTeam = f === "__all__";
 
-  // key = team||player -> { player, team, total, vs: Map(opponent -> count) }
+  // key = team||player -> { player, team, total, goals: [{date, opponent, minute}] }
   const stats = new Map();
   all.forEach(m => {
     (m.scorers || []).forEach(g => {
@@ -244,13 +249,16 @@ function renderScorers() {
       const opponent = m.home === team ? m.away : m.home;
       const key = team + "||" + g.player;
       let s = stats.get(key);
-      if (!s) { s = { player: g.player, team, total: 0, vs: new Map() }; stats.set(key, s); }
+      if (!s) { s = { player: g.player, team, total: 0, goals: [] }; stats.set(key, s); }
       s.total += 1;
-      if (opponent) s.vs.set(opponent, (s.vs.get(opponent) || 0) + 1);
+      s.goals.push({ date: m.date, opponent, minute: g.minute, home: m.home, away: m.away });
     });
   });
 
   const ranked = [...stats.values()].sort((a, b) => b.total - a.total || a.player.localeCompare(b.player));
+  // Newest goal first, so "when" reads naturally.
+  ranked.forEach(s => s.goals.sort((a, b) =>
+    (b.date || "").localeCompare(a.date || "") || (b.minute || 0) - (a.minute || 0)));
 
   const list = document.getElementById("scorer-list");
   list.innerHTML = "";
@@ -259,27 +267,33 @@ function renderScorers() {
     return;
   }
   ranked.forEach((s, i) => {
-    const vs = [...s.vs.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
     const li = document.createElement("li");
     li.className = "scorer clickable";
 
     const head = document.createElement("button");
     head.type = "button";
     head.className = "scorer-head";
-    const nameHtml = showTeam
-      ? `<span class="sc-name">${esc(s.player)}<span class="sc-team">${esc(s.team)}</span></span>`
-      : `<span class="sc-name">${esc(s.player)}</span>`;
+    const last = s.goals.find(g => g.date);
+    const sub = [showTeam ? esc(s.team) : "",
+                 last ? "letztes Tor: " + fmtDate(last.date) : ""].filter(Boolean);
     head.innerHTML =
       `<span class="scorer-rank">${i + 1}</span>` +
-      nameHtml +
+      `<span class="sc-name">${esc(s.player)}` +
+        sub.map(t => `<span class="sc-team">${t}</span>`).join("") +
+      `</span>` +
       `<span class="sc-goals">${s.total}<span>${s.total === 1 ? "Tor" : "Tore"}</span></span>` +
       `<span class="chev">▾</span>`;
 
+    // Every goal with when it fell, newest first.
     const detail = document.createElement("div");
     detail.className = "scorer-vs";
-    detail.innerHTML = `<strong>Getroffen gegen</strong><ul>` +
-      vs.map(([opp, c]) =>
-        `<li><span>${esc(opp)}</span><span class="c">${c}×</span></li>`).join("") +
+    detail.innerHTML = `<strong>${s.total === 1 ? "Das Tor" : "Die Tore"}</strong><ul>` +
+      s.goals.map(g => {
+        const when = g.date ? fmtDate(g.date) : "";
+        const vs = g.opponent ? ` gegen ${esc(g.opponent)}` : "";
+        return `<li><span>${when}${vs}</span>` +
+               `<span class="c">${g.minute ? esc(g.minute) + "." + " Min." : ""}</span></li>`;
+      }).join("") +
       `</ul>`;
 
     li.appendChild(head);
@@ -326,16 +340,18 @@ function showTeamGames(team) {
 /* ---------- init ---------- */
 
 async function loadAndRender() {
-  const [config, standings, matches, scorers] = await Promise.all([
+  const [config, standings, matches, scorers, players] = await Promise.all([
     loadJSON("data/config.enc.json"),
     loadJSON("data/standings.enc.json"),
     loadJSON("data/matches.enc.json"),
     loadJSON("data/scorers.enc.json"),
+    loadJSON("data/players.enc.json").catch(() => ({ players: [] })),
   ]);
   DATA.config = config;
   DATA.standings = standings;
   DATA.matches = matches;
   DATA.scorers = scorers && scorers.byMatch ? scorers : { byMatch: {} };
+  DATA.players = { players: (players && players.players) || [] };
 
   renderAll();
   updateLastChecked();

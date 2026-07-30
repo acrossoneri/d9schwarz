@@ -63,7 +63,10 @@ ROLES = ("admin", "viewer")
 
 # scorers.enc.json holds manually entered goal scorers. The scraper never writes
 # it, so a scrape can never wipe hand-entered data.
-ENCRYPTED = ("config", "matches", "standings", "scorers")
+# admin.enc.json holds the GitHub token the Einstellungen page publishes with, so
+# admins don't have to paste it on every device. Encrypted, because a plaintext
+# token in a public repo gets revoked by GitHub's secret scanning within minutes.
+ENCRYPTED = ("config", "matches", "standings", "scorers", "players", "admin")
 
 BAD_CREDS = "ERROR: unknown username or wrong password."
 
