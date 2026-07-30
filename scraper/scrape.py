@@ -178,6 +178,9 @@ def main():
         sys.exit(1)
 
     games = parse_group_games(html)
+    # The matchcenter shuffles games within a day between requests, which used to
+    # produce commits with no actual change. Fix the order ourselves.
+    games.sort(key=lambda g: (g["date"] or "", g["time"] or "", g["id"] or ""))
     our = [g for g in games if OUR_TEAM in (g["home"], g["away"])]
     standings = compute_standings(games)
     group_name = extract_group_name(html)
