@@ -2,7 +2,7 @@
    Loads local JSON and renders Tabelle, Spiele and Torschützen.
    No framework, no build step. */
 
-const DATA = { config: null, standings: null, matches: null };
+const DATA = { config: null, standings: null, matches: null, scorers: null };
 
 /* ---------- helpers ---------- */
 
@@ -326,22 +326,39 @@ function showTeamGames(team) {
 /* ---------- init ---------- */
 
 async function loadAndRender() {
-  const [config, standings, matches] = await Promise.all([
+  const [config, standings, matches, scorers] = await Promise.all([
     loadJSON("data/config.enc.json"),
     loadJSON("data/standings.enc.json"),
     loadJSON("data/matches.enc.json"),
+    loadJSON("data/scorers.enc.json"),
   ]);
   DATA.config = config;
   DATA.standings = standings;
   DATA.matches = matches;
+  DATA.scorers = scorers && scorers.byMatch ? scorers : { byMatch: {} };
 
+  renderAll();
+  updateLastChecked();
+}
+
+// Hand-entered scorers live in their own file so an hourly scrape can never wipe
+// them. Where both exist, the manual entry for that match wins.
+function mergeScorers() {
+  const byMatch = (DATA.scorers && DATA.scorers.byMatch) || {};
+  ((DATA.matches && DATA.matches.matches) || []).forEach(m => {
+    if (Object.prototype.hasOwnProperty.call(byMatch, m.id)) m.scorers = byMatch[m.id];
+  });
+}
+
+function renderAll() {
+  mergeScorers();
   renderHeader();
   populateSelect("team-filter");
   populateSelect("scorer-filter");
   renderStandings();
   renderMatches();
   renderScorers();
-  updateLastChecked();
+  if (AUTH.isAdmin()) ADMIN.render();
 }
 
 let refreshing = false;
@@ -350,6 +367,12 @@ let lastLoad = 0;
 async function refresh(force = false) {
   if (refreshing || !AUTH.isUnlocked()) return;
   if (!force && Date.now() - lastLoad < 60000) return;
+  // Never let a reload silently throw away an admin's unsaved scorer edits.
+  if (ADMIN.isDirty()) {
+    if (!force) return;
+    if (!confirm("Es gibt ungespeicherte Torschützen. Neu laden und verwerfen?")) return;
+    ADMIN.discard();
+  }
   refreshing = true;
   const btn = document.getElementById("refresh-btn");
   if (btn) btn.classList.add("spin");
@@ -390,16 +413,22 @@ function wire() {
 const App = {
   start() {
     wire();
+    // The Einstellungen tab only exists for admins.
+    const admin = AUTH.isAdmin();
+    document.querySelector('.tab[data-tab="einstellungen"]').hidden = !admin;
+    if (admin) ADMIN.mount();
     activateTab("tabelle");
     refresh(true);
   },
   // Wipe everything decrypted, in memory and in the DOM, so nothing survives
   // behind the login screen.
   stop() {
-    DATA.config = DATA.standings = DATA.matches = null;
+    ADMIN.unmount();
+    DATA.config = DATA.standings = DATA.matches = DATA.scorers = null;
     lastLoad = 0;
     document.querySelector("#standings-table tbody").innerHTML = "";
-    ["match-list", "scorer-list", "team-filter", "scorer-filter"].forEach(id => {
+    ["match-list", "scorer-list", "team-filter", "scorer-filter",
+     "settings-match", "scorer-editor"].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.innerHTML = "";
     });

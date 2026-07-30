@@ -7,7 +7,7 @@
   <meta name="description" content="Tabelle, Spielplan, Resultate und Torschützen der Junioren D-9 schwarz des AC Rossoneri." />
   <meta name="robots" content="noindex, nofollow" />
   <link rel="icon" href="assets/logo.png" />
-  <link rel="stylesheet" href="assets/style.css?v=20260730" />
+  <link rel="stylesheet" href="assets/style.css?v=20260730b" />
 </head>
 <body>
   <!-- LOGIN — shown until the data files can be decrypted -->
@@ -63,6 +63,7 @@
     <button class="tab is-active" role="tab" aria-selected="true" data-tab="tabelle">Tabelle</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="spiele">Spiele</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="torschuetzen">Torschützen</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="einstellungen" hidden>Einstellungen</button>
   </nav>
 
   <main class="wrap">
@@ -104,6 +105,58 @@
       <select id="scorer-filter" class="team-filter" aria-label="Team wählen"></select>
       <ol class="scorer-list" id="scorer-list"></ol>
     </section>
+
+    <!-- EINSTELLUNGEN (nur Admin) -->
+    <section id="tab-einstellungen" class="panel" role="tabpanel" hidden>
+      <h2>Torschützen erfassen</h2>
+      <p class="hint">Für Spiele, bei denen im Matchcenter keine Torschützen stehen.
+        Diese Angaben überschreiben die automatisch geholten.</p>
+
+      <label class="field-label" for="settings-match">Spiel</label>
+      <select id="settings-match" class="team-filter" aria-label="Spiel wählen"></select>
+
+      <div id="scorer-editor" class="scorer-editor"></div>
+      <button id="scorer-add" class="btn-secondary" type="button">+ Torschütze</button>
+
+      <div class="publish-box">
+        <p id="publish-state" class="publish-state"></p>
+        <div class="publish-actions">
+          <button id="publish-btn" class="btn-primary" type="button">Speichern &amp; veröffentlichen</button>
+          <button id="download-btn" class="btn-secondary" type="button">Datei herunterladen</button>
+        </div>
+      </div>
+
+      <h2>Benutzer</h2>
+      <p class="hint">„Nur lesen“ sieht Tabelle, Spiele und Torschützen. „Admin“ sieht
+        zusätzlich diese Seite.</p>
+      <div id="user-list" class="user-list"></div>
+      <div class="user-new">
+        <input id="new-user" type="text" placeholder="Benutzername"
+               autocomplete="off" autocapitalize="none" spellcheck="false" />
+        <input id="new-pass" type="password" placeholder="Passwort" autocomplete="new-password" />
+        <select id="new-role" class="sc-team">
+          <option value="viewer">Nur lesen</option>
+          <option value="admin">Admin</option>
+        </select>
+        <button id="user-add" class="btn-secondary" type="button">Hinzufügen</button>
+      </div>
+      <p id="user-state" class="publish-state"></p>
+
+      <details class="token-details">
+        <summary>GitHub-Token</summary>
+        <p class="hint">Ohne Server kann die Seite nur über GitHub speichern — für
+          Torschützen wie für Benutzer. Nötig ist ein <em>fine-grained personal access
+          token</em> für das Repository <code>acrossoneri/d9schwarz</code> mit der
+          Berechtigung <code>Contents: Read and write</code>. Der Token bleibt nur auf
+          diesem Gerät.</p>
+        <div class="token-row">
+          <input id="token-input" type="password" placeholder="github_pat_…"
+                 autocomplete="off" spellcheck="false" />
+          <button id="token-save" class="btn-secondary" type="button">Speichern</button>
+        </div>
+        <p id="token-state" class="hint"></p>
+      </details>
+    </section>
   </main>
 
   <footer class="site-footer wrap">
@@ -111,7 +164,8 @@
   </footer>
   </div><!-- /#app -->
 
-  <script src="assets/auth.js?v=20260730"></script>
-  <script src="assets/app.js?v=20260730"></script>
+  <script src="assets/auth.js?v=20260730b"></script>
+  <script src="assets/app.js?v=20260730b"></script>
+  <script src="assets/admin.js?v=20260730b"></script>
 </body>
 </html>

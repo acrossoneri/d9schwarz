@@ -154,7 +154,7 @@ def compute_standings(games):
 
 def main():
     now = datetime.now(timezone.utc).astimezone().strftime("%Y-%m-%d %H:%M")
-    key = sitecrypt.unlock()  # fail fast on bad credentials, before the slow scrape
+    key, _role = sitecrypt.unlock()  # fail fast on bad credentials, before the slow scrape
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True, args=[

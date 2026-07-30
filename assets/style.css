@@ -140,8 +140,9 @@ body {
   padding-top: 10px; padding-bottom: 10px;
   background: var(--bg);
 }
+.tabs { flex-wrap: wrap; }        /* the admin's 4th tab drops to its own row */
 .tab {
-  flex: 1 1 0;
+  flex: 1 1 auto; min-width: 0; white-space: nowrap;
   appearance: none; border: 1px solid var(--line); background: var(--card);
   color: var(--ink); font: inherit; font-weight: 600; font-size: .92rem;
   padding: 10px 8px; border-radius: 10px; cursor: pointer;
@@ -260,6 +261,95 @@ table.standings { width: 100%; border-collapse: collapse; background: var(--card
 .scorer-vs ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
 .scorer-vs li { display: flex; justify-content: space-between; font-size: .88rem; }
 .scorer-vs li .c { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* Einstellungen (Admin) */
+.field-label { display: block; font-size: .78rem; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
+
+.btn-primary, .btn-secondary {
+  appearance: none; border-radius: 10px; cursor: pointer;
+  font: inherit; font-weight: 600; font-size: .92rem; padding: 10px 14px;
+  transition: background .12s, border-color .12s;
+}
+.btn-primary { border: 0; background: var(--red); color: #fff; }
+.btn-primary:hover { background: var(--red-dark); }
+.btn-primary:disabled { opacity: .5; cursor: default; }
+.btn-secondary { border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+.btn-secondary:hover { border-color: var(--red); }
+.btn-slim { padding: 7px 10px; font-size: .82rem; }
+
+.scorer-editor { display: grid; gap: 8px; margin-bottom: 10px; }
+.sc-row { display: grid; grid-template-columns: 1fr minmax(0, 1fr) 62px auto; gap: 6px; align-items: center; }
+/* On a phone the team names are far too long to share a row with the name. */
+@media (max-width: 560px) {
+  .sc-row {
+    grid-template-columns: 1fr 62px auto;
+    grid-template-areas: "name name name" "team min del";
+    gap: 6px;
+    padding: 8px; border: 1px solid var(--line); border-radius: var(--radius);
+    background: var(--card);
+  }
+  .sc-row .sc-player { grid-area: name; }
+  .sc-row .sc-team { grid-area: team; max-width: none; }
+  .sc-row .sc-min { grid-area: min; }
+  .sc-row .sc-del { grid-area: del; }
+  /* the name gets its own line; role/password/delete sit underneath */
+  .user-row .user-name { grid-column: 1 / -1; }
+}
+.sc-row input, .sc-team {
+  font: inherit; font-size: .9rem; color: var(--ink); min-width: 0;
+  background: var(--card); border: 1px solid var(--line); border-radius: 9px; padding: 9px 10px;
+}
+.sc-team { max-width: 42vw; }
+.sc-row input:focus, .sc-team:focus { outline: 2px solid var(--red); outline-offset: 1px; }
+.sc-del {
+  appearance: none; cursor: pointer; width: 34px; height: 34px; border-radius: 9px;
+  border: 1px solid var(--line); background: var(--card); color: var(--muted);
+  font-size: 18px; line-height: 1; display: grid; place-items: center;
+}
+.sc-del:hover { border-color: var(--red); color: var(--red); }
+.hint.warn { color: #9a6b00; }
+@media (prefers-color-scheme: dark) { .hint.warn { color: #e0b45c; } }
+
+.publish-box { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+.publish-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.publish-state { font-size: .84rem; color: var(--muted); margin: 0 0 10px; }
+.publish-state.ok { color: #1c7a45; }
+.publish-state.err { color: #a3231a; }
+@media (prefers-color-scheme: dark) {
+  .publish-state.ok { color: #6bd39b; }
+  .publish-state.err { color: #f3a19a; }
+}
+
+.user-list { display: grid; gap: 8px; margin-bottom: 12px; }
+.user-row {
+  display: grid; grid-template-columns: 1fr auto auto auto; gap: 6px; align-items: center;
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 8px 10px;
+}
+.user-name { font-weight: 600; font-size: .92rem; overflow: hidden; text-overflow: ellipsis; }
+.user-you {
+  margin-left: 6px; font-size: .66rem; font-weight: 700; letter-spacing: .03em;
+  background: var(--red); color: #fff; border-radius: 999px; padding: 1px 7px; vertical-align: 1px;
+}
+.user-new { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.user-new input, .user-new select {
+  font: inherit; font-size: .9rem; color: var(--ink); min-width: 0;
+  background: var(--card); border: 1px solid var(--line); border-radius: 9px; padding: 9px 10px;
+}
+.user-new input:focus, .user-new select:focus { outline: 2px solid var(--red); outline-offset: 1px; }
+
+.token-details { margin-top: 20px; border-top: 1px solid var(--line); padding-top: 12px; }
+.token-details summary { cursor: pointer; font-weight: 600; font-size: .9rem; }
+.token-details code {
+  background: rgba(0, 0, 0, .07); padding: 1px 5px; border-radius: 5px; font-size: .85em;
+}
+@media (prefers-color-scheme: dark) { .token-details code { background: rgba(255, 255, 255, .1); } }
+.token-row { display: grid; grid-template-columns: 1fr auto; gap: 6px; margin-top: 8px; }
+.token-row input {
+  font: inherit; font-size: .9rem; color: var(--ink); min-width: 0;
+  background: var(--card); border: 1px solid var(--line); border-radius: 9px; padding: 9px 10px;
+}
+.token-row input:focus { outline: 2px solid var(--red); outline-offset: 1px; }
 
 /* Footer */
 .site-footer { margin-top: 24px; padding-block: 20px; border-top: 1px solid var(--line); }

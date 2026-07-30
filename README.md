@@ -13,26 +13,73 @@ Ein Login-Formular allein wäre wirkungslos — man könnte `data/matches.json` 
 direkt aufrufen. Deshalb sind **die Datendateien selbst verschlüsselt**:
 
 * `data/*.enc.json` — AES-256-GCM. Ohne Passwort nicht lesbar, egal wie man sie abruft.
-* `data/auth.json` — nur die öffentlichen KDF-Parameter (Salt, Iterationen) und ein
-  Prüfblock, mit dem der Browser ein falsches Passwort erkennt.
-* Der Schlüssel wird im Browser aus **Benutzername + Passwort** abgeleitet
-  (PBKDF2-HMAC-SHA256, 310 000 Runden). Er verlässt das Gerät nie.
+* Verschlüsselt wird mit einem zufälligen **Master-Key**. Jedes Konto trägt diesen
+  Key eingepackt („wrapped“) unter einem Schlüssel, der aus **Benutzername +
+  Passwort** abgeleitet wird (PBKDF2-HMAC-SHA256, 310 000 Runden, im Browser).
+  Anmelden heisst: den Master-Key auspacken. Konten hinzufügen oder entfernen
+  verschlüsselt die Daten also nicht neu.
+* `data/auth.json` ist öffentlich, verrät aber nichts: Konten sind über einen Hash
+  des Benutzernamens indexiert, und Name plus Rolle liegen in einem `meta`-Block,
+  der mit dem Master-Key verschlüsselt ist. Genau das erlaubt einem Admin, Konten
+  aufzulisten und Rollen zu ändern, ohne ein Passwort zu kennen.
 * „Angemeldet bleiben“ → Schlüssel bleibt 30 Tage im `localStorage`.
   Sonst: automatische Abmeldung nach 30 Minuten ohne Aktivität.
 
 Klartext-Dateien (`data/config.json`, `matches.json`, `standings.json`) sind in
 `.gitignore` und dürfen nie committet werden.
 
-### Zugangsdaten ändern
+### Rollen
+
+| Rolle | Sieht |
+|-------|-------|
+| `viewer` | Tabelle, Spiele, Torschützen |
+| `admin` | zusätzlich den Tab **Einstellungen** |
+
+Wichtig zur Einordnung: der Login schützt die **Daten**, die Rolle steuert nur die
+**Oberfläche**. Wer angemeldet ist, hält den Master-Key — die Rolle ist also keine
+Sicherheitsgrenze. Was Änderungen wirklich absichert, ist der GitHub-Token: ohne
+ihn kann niemand etwas veröffentlichen.
+
+## Einstellungen (Admin)
+
+Der Tab **Einstellungen** kann zweierlei, beides direkt aus dem Browser:
+
+**Torschützen erfassen** — für Spiele, bei denen im Matchcenter keine stehen. Sie
+landen in `data/scorers.enc.json`, einer Datei, die der Scraper **nie** schreibt;
+ein Scrape kann handeingetragene Daten also nicht überschreiben. Pro Spiel
+überschreiben die manuellen Angaben die automatisch geholten.
+
+**Benutzer verwalten** — anlegen, Passwort neu setzen, Rolle wechseln, löschen.
+Wächter: das eigene Konto lässt sich nicht löschen, und der letzte Admin lässt sich
+weder löschen noch herabsetzen.
+
+Gespeichert wird über die GitHub-Contents-API. Dafür braucht es einmalig einen
+*fine-grained personal access token* für `acrossoneri/d9schwarz` mit
+`Contents: Read and write`; er bleibt im `localStorage` des Admin-Geräts. Ohne
+Token lässt sich die verschlüsselte Datei herunterladen und von Hand committen.
+Nach dem Veröffentlichen dauert es etwa eine Minute, bis GitHub Pages neu gebaut hat.
+
+## Konten von der Kommandozeile
 
 ```bash
-rm data/auth.json                      # neues Salt erzwingen
+# erstes Konto + alles verschlüsseln (nur beim Aufsetzen)
 SITE_USER=... SITE_PASSWORD=... python scraper/sitecrypt.py init
+
+# weitere Konten (braucht ein bestehendes Admin-Konto)
+SITE_USER=admin SITE_PASSWORD=... \
+  NEW_USER=trainer NEW_PASSWORD=... NEW_ROLE=viewer \
+  python scraper/sitecrypt.py adduser
+
+python scraper/sitecrypt.py users              # Konten und Rollen anzeigen
+python scraper/sitecrypt.py passwd trainer     # NEW_PASSWORD=... setzen
+python scraper/sitecrypt.py role trainer admin
+python scraper/sitecrypt.py deluser trainer
 ```
 
-Danach in GitHub unter *Settings → Secrets and variables → Actions* die Secrets
-`SITE_USER` und `SITE_PASSWORD` anpassen, sonst kann der Scraper nicht mehr schreiben.
-Bestehende Sitzungen werden dadurch ungültig.
+Ein gelöschtes Konto öffnet mit seinem alten Passwort weiterhin die Ciphertexte in
+der Git-History. Um es vollständig auszuschliessen: `data/auth.json` löschen und neu
+`init` (neuer Master-Key, alles wird neu verschlüsselt) — danach die Actions-Secrets
+`SITE_USER`/`SITE_PASSWORD` anpassen, sonst kann der Scraper nicht mehr schreiben.
 
 ### Daten von Hand ansehen oder ändern
 
