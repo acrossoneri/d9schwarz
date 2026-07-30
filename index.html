@@ -5,10 +5,37 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AC Rossoneri · Junioren D-9 schwarz</title>
   <meta name="description" content="Tabelle, Spielplan, Resultate und Torschützen der Junioren D-9 schwarz des AC Rossoneri." />
+  <meta name="robots" content="noindex, nofollow" />
   <link rel="icon" href="assets/logo.png" />
-  <link rel="stylesheet" href="assets/style.css?v=20260717" />
+  <link rel="stylesheet" href="assets/style.css?v=20260730" />
 </head>
 <body>
+  <!-- LOGIN — shown until the data files can be decrypted -->
+  <div id="login" class="login-screen" hidden>
+    <form id="login-form" class="login-card" novalidate>
+      <img class="crest" src="assets/logo.png" alt="" width="64" height="64" />
+      <h1>AC Rossoneri</h1>
+      <p class="login-sub">Junioren D-9 schwarz</p>
+
+      <label for="login-user">Benutzername</label>
+      <input id="login-user" name="username" type="text" required
+             autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" />
+
+      <label for="login-pass">Passwort</label>
+      <input id="login-pass" name="password" type="password" required
+             autocomplete="current-password" />
+
+      <label class="login-remember">
+        <input id="login-remember" type="checkbox" />
+        <span>Angemeldet bleiben (30 Tage)</span>
+      </label>
+
+      <button id="login-submit" type="submit">Anmelden</button>
+      <p id="login-error" class="login-error" role="alert" hidden></p>
+    </form>
+  </div>
+
+  <div id="app" hidden>
   <header class="site-header">
     <div class="wrap header-inner">
       <img class="crest" src="assets/logo.png" alt="AC Rossoneri" width="52" height="52" />
@@ -19,7 +46,10 @@
       <div class="season">
         <span id="season-label">Saison 2026/27</span>
         <span id="updated-label" class="updated"></span>
-        <button id="refresh-btn" class="refresh-btn" type="button" title="Aktualisieren" aria-label="Aktualisieren">↻</button>
+        <div class="header-actions">
+          <button id="refresh-btn" class="refresh-btn" type="button" title="Aktualisieren" aria-label="Aktualisieren">↻</button>
+          <button id="logout-btn" class="refresh-btn" type="button" title="Abmelden" aria-label="Abmelden">⏻</button>
+        </div>
       </div>
     </div>
   </header>
@@ -79,7 +109,9 @@
   <footer class="site-footer wrap">
     <p class="muted">Inoffizielle Team-Seite</p>
   </footer>
+  </div><!-- /#app -->
 
-  <script src="assets/app.js?v=20260717"></script>
+  <script src="assets/auth.js?v=20260730"></script>
+  <script src="assets/app.js?v=20260730"></script>
 </body>
 </html>

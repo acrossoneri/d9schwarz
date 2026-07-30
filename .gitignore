@@ -11,3 +11,9 @@ Thumbs.db
 # Local scraper artifacts / debug dumps
 *.local.html
 scraper/*.html
+
+# Plaintext data must never be published — only the *.enc.json files are served.
+data/config.json
+data/matches.json
+data/standings.json
+data/*.plain.json

@@ -6,10 +6,9 @@ const DATA = { config: null, standings: null, matches: null };
 
 /* ---------- helpers ---------- */
 
+// The data files are AES-GCM ciphertext; AUTH holds the key from the login.
 async function loadJSON(path) {
-  const res = await fetch(path, { cache: "no-store" });
-  if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`);
-  return res.json();
+  return AUTH.decryptJSON(path);
 }
 
 const WEEKDAY = { weekday: "short", day: "2-digit", month: "2-digit" };
@@ -328,9 +327,9 @@ function showTeamGames(team) {
 
 async function loadAndRender() {
   const [config, standings, matches] = await Promise.all([
-    loadJSON("data/config.json"),
-    loadJSON("data/standings.json"),
-    loadJSON("data/matches.json"),
+    loadJSON("data/config.enc.json"),
+    loadJSON("data/standings.enc.json"),
+    loadJSON("data/matches.enc.json"),
   ]);
   DATA.config = config;
   DATA.standings = standings;
@@ -349,7 +348,7 @@ let refreshing = false;
 let lastLoad = 0;
 // force=true always reloads (button); otherwise skip if we reloaded < 60s ago (tab refocus).
 async function refresh(force = false) {
-  if (refreshing) return;
+  if (refreshing || !AUTH.isUnlocked()) return;
   if (!force && Date.now() - lastLoad < 60000) return;
   refreshing = true;
   const btn = document.getElementById("refresh-btn");
@@ -367,7 +366,10 @@ async function refresh(force = false) {
   }
 }
 
-function init() {
+let wired = false;
+function wire() {
+  if (wired) return;
+  wired = true;
   setupTabs();
   const btn = document.getElementById("refresh-btn");
   if (btn) btn.addEventListener("click", () => refresh(true));
@@ -382,7 +384,32 @@ function init() {
   });
   document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
   window.addEventListener("focus", () => refresh());
-  refresh(true);
 }
 
-document.addEventListener("DOMContentLoaded", init);
+/* auth.js owns the gate and calls these when the session opens and closes. */
+const App = {
+  start() {
+    wire();
+    activateTab("tabelle");
+    refresh(true);
+  },
+  // Wipe everything decrypted, in memory and in the DOM, so nothing survives
+  // behind the login screen.
+  stop() {
+    DATA.config = DATA.standings = DATA.matches = null;
+    lastLoad = 0;
+    document.querySelector("#standings-table tbody").innerHTML = "";
+    ["match-list", "scorer-list", "team-filter", "scorer-filter"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = "";
+    });
+    ["updated-label", "standings-group"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = id === "standings-group" ? "Tabelle" : "";
+    });
+    const err = document.getElementById("error-box");
+    if (err) { err.hidden = true; err.innerHTML = ""; }
+    const banner = document.getElementById("sample-banner");
+    if (banner) banner.hidden = true;
+  },
+};

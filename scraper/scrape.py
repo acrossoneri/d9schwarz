@@ -7,24 +7,24 @@ request is refused (HTTP 403). This uses a real headless Chromium (Playwright),
 which executes the challenge JS and loads the page like a normal browser.
 
 It reads the whole group's Spielplan (a=sp), then:
-  * writes data/matches.json   -> only our team's games (id = Spielnummer)
-  * writes data/standings.json -> table COMPUTED from all played group results
-It never touches data/goals.json or data/config.json (those are hand-maintained).
+  * writes data/matches.enc.json   -> every game in the group (id = Spielnummer)
+  * writes data/standings.enc.json -> table COMPUTED from all played group results
+It never touches data/config.enc.json (that one is hand-maintained).
 
-Run:  python scrape.py
-Deps: playwright, beautifulsoup4  (+  playwright install chromium)
+Both outputs are encrypted — see crypt.py. The site is public, the data is not,
+so the scraper needs the site credentials to write:
+
+Run:  SITE_USER=... SITE_PASSWORD=... python scrape.py
+Deps: playwright, beautifulsoup4, cryptography  (+  playwright install chromium)
 """
-import json
 import re
 import sys
 from datetime import datetime, timezone
-from pathlib import Path
 
 from bs4 import BeautifulSoup
 from playwright.sync_api import sync_playwright
 
-ROOT = Path(__file__).resolve().parent.parent
-DATA = ROOT / "data"
+import sitecrypt
 
 OUR_TEAM = "AC Rossoneri schwarz"
 BASE = "https://matchcenter.fvnws.ch/default.aspx?oid=8&lng=1&v=508&t=63291&ls=26142&sg=71135"
@@ -105,20 +105,6 @@ def parse_group_games(html):
     return games
 
 
-def write_json(path, payload):
-    """Write JSON, but keep the previous 'updated' timestamp when nothing else
-    changed — so unchanged runs produce a byte-identical file and no git commit."""
-    if path.exists():
-        try:
-            old = json.loads(path.read_text(encoding="utf-8"))
-            if {k: v for k, v in old.items() if k != "updated"} == \
-               {k: v for k, v in payload.items() if k != "updated"}:
-                payload = {**payload, "updated": old.get("updated", payload.get("updated"))}
-        except Exception:
-            pass
-    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-
-
 def extract_group_name(html, default="Junioren D-9"):
     """Pull the official championship/group name, e.g.
     'Junioren D-9 - Stärkeklasse 2 - Herbstrunde - Gruppe 3'."""
@@ -168,6 +154,8 @@ def compute_standings(games):
 
 def main():
     now = datetime.now(timezone.utc).astimezone().strftime("%Y-%m-%d %H:%M")
+    key = sitecrypt.unlock()  # fail fast on bad credentials, before the slow scrape
+
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True, args=[
             "--no-sandbox",
@@ -194,9 +182,9 @@ def main():
     standings = compute_standings(games)
     group_name = extract_group_name(html)
 
-    write_json(DATA / "matches.json", {"updated": now, "matches": games})
-    write_json(DATA / "standings.json",
-               {"updated": now, "group": group_name, "rows": standings})
+    sitecrypt.write_encrypted("matches", key, {"matches": games}, now)
+    sitecrypt.write_encrypted("standings", key,
+                              {"group": group_name, "rows": standings}, now)
 
     played = sum(1 for g in our if g["status"] == "played")
     print(f"OK  {len(games)} group games | our team: {len(our)} games "

@@ -5,8 +5,11 @@ name: Update data
 # The matchcenter is behind Cloudflare. A patient headless browser gets through,
 # but GitHub's datacenter IP is occasionally challenged, so the scrape step is
 # BEST-EFFORT: if it can't get through, the run keeps the previous data instead of
-# failing (no error emails). For a guaranteed refresh, run scraper/update.sh from
-# your own machine.
+# failing (no error emails).
+#
+# The published data files are encrypted, so the scraper needs the site
+# credentials. Set them under Settings -> Secrets and variables -> Actions:
+#   SITE_USER, SITE_PASSWORD
 # Times are UTC (Swiss local = UTC+1 winter / +2 summer).
 on:
   schedule:
@@ -36,6 +39,9 @@ jobs:
           python -m playwright install --with-deps chromium
 
       - name: Scrape matchcenter (best effort)
+        env:
+          SITE_USER: ${{ secrets.SITE_USER }}
+          SITE_PASSWORD: ${{ secrets.SITE_PASSWORD }}
         run: |
           python scraper/scrape.py \
             || echo "::warning::Scrape failed (Cloudflare?) — keeping previous data."
@@ -44,7 +50,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/matches.json data/standings.json
+          git add data/matches.enc.json data/standings.enc.json
           if git diff --staged --quiet; then
             echo "No changes."
           else
