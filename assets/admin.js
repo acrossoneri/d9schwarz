@@ -385,7 +385,8 @@ const ADMIN = (() => {
         const you = document.createElement("span");
         you.className = "user-you";
         you.textContent = "du";
-        name.appendChild(you);
+        // real space, so a screen reader doesn't read "admindu"
+        name.append(" ", you);
       }
 
       const role = roleSelect(acc.role);
