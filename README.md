@@ -44,10 +44,14 @@ ihn kann niemand etwas veröffentlichen.
 
 Der Tab **Einstellungen** kann zweierlei, beides direkt aus dem Browser:
 
-**Torschützen erfassen** — für Spiele, bei denen im Matchcenter keine stehen. Sie
-landen in `data/scorers.enc.json`, einer Datei, die der Scraper **nie** schreibt;
-ein Scrape kann handeingetragene Daten also nicht überschreiben. Pro Spiel
-überschreiben die manuellen Angaben die automatisch geholten.
+**Torschützen erfassen** — für Spiele, bei denen im Matchcenter keine stehen (im
+D-9 also für alle). Sie landen in `data/scorers.enc.json`, einer Datei, die der
+Scraper **nie** schreibt; ein Scrape kann handeingetragene Daten also nicht
+überschreiben. Erfasst wird nur das eigene Team.
+
+Das Namensfeld schlägt vor, wer im Matchcenter für dieses Spiel **aufgestellt**
+war — Startformation und eingesetzte Ersatzspieler, in der Schreibweise des
+Verbands. Für Spiele ohne Aufstellung greift die von Hand gepflegte Spielerliste.
 
 **Benutzer verwalten** — anlegen, Passwort neu setzen, Rolle wechseln, löschen.
 Wächter: das eigene Konto lässt sich nicht löschen, und der letzte Admin lässt sich

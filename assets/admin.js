@@ -186,6 +186,8 @@ const ADMIN = (() => {
       box.appendChild(hint(`Resultat ${m.homeScore}:${m.awayScore} — ${expected} eigene `
                           + `${expected === 1 ? "Tor" : "Tore"}, erfasst sind ${total}.`, "warn"));
     }
+    // The suggestions follow the selected game, so they refresh with the editor.
+    renderRosterOptions();
   }
 
   function hint(text, cls) {
@@ -268,18 +270,39 @@ const ADMIN = (() => {
     renderRosterOptions();
   }
 
-  // Feeds the <datalist> the scorer name fields suggest from.
+  // Everyone the matchcenter listed in OUR line-up for a game — the match-day
+  // squad, spelled the way the Verband spells it. Better than the hand-kept roster
+  // for a specific game: it is exactly the players who could have scored.
+  function matchSquad(m) {
+    const lineups = (m && m.detail && m.detail.lineups) || [];
+    // By name first. The parser emits home before away, so the side we play on is
+    // the fallback for the day the matchcenter spells our name differently.
+    const side = m && m.away === ourTeam() ? 1 : 0;
+    const ours = lineups.find(l => l && l.team === ourTeam()) || lineups[side];
+    if (!ours) return [];
+    return [...(ours.starting || []), ...(ours.subs || [])]
+      .filter(p => p && !p.unused)
+      .map(p => (p.name || "").trim())
+      .filter(Boolean);
+  }
+
+  // Feeds the <datalist> the scorer name fields suggest from: the line-up of the
+  // selected game first, then the hand-kept roster for games without one.
   function renderRosterOptions() {
     const dl = el("roster-list");
     if (!dl) return;
     dl.innerHTML = "";
-    [...new Set(roster().map(p => (p || "").trim()).filter(Boolean))]
-      .sort((a, b) => a.localeCompare(b))
-      .forEach(p => {
-        const o = document.createElement("option");
-        o.value = p;
-        dl.appendChild(o);
-      });
+    const squad = matchSquad(currentMatch());
+    const rest = roster().map(p => (p || "").trim()).filter(Boolean)
+                         .sort((a, b) => a.localeCompare(b));
+    const seen = new Set();
+    [...squad, ...rest].forEach(name => {
+      if (seen.has(name)) return;
+      seen.add(name);
+      const o = document.createElement("option");
+      o.value = name;
+      dl.appendChild(o);
+    });
   }
 
   function commitPlayers() {

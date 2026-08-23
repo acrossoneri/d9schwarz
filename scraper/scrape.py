@@ -55,16 +55,20 @@ def _looks_real(html, title):
     return len(html) > 8000 and not bad
 
 
-def fetch(page, url, tries=3):
+def fetch(page, url, tries=3, expect=None):
     """Load a matchcenter URL, patiently waiting for the Cloudflare challenge to clear.
-    Retries a few times (the clearance cookie is kept across attempts on the same page)."""
+    Retries a few times (the clearance cookie is kept across attempts on the same page).
+
+    `expect` is a marker that must appear in the HTML before it counts as loaded.
+    Without one a page only has to be big and free of challenge wording — which an
+    interstitial can manage — so pass the marker when you know what you came for."""
     html = ""
     for attempt in range(tries):
         page.goto(url, wait_until="domcontentloaded", timeout=60000)
         for _ in range(20):  # up to ~40s per attempt
             page.wait_for_timeout(2000)
             html = page.content()
-            if _looks_real(html, page.title()):
+            if _looks_real(html, page.title()) and (not expect or expect in html):
                 return html
         page.wait_for_timeout(3000)  # brief backoff, then retry
     return html
@@ -309,10 +313,13 @@ def attach_details(page, games, cached, now):
             budget -= 1
 
         try:
-            # tries=1: a detail is a nice-to-have. Letting each of ~17 games burn the
-            # full three-attempt budget could push one run past its step timeout,
-            # and a game we miss is simply picked up by the next run.
-            detail = parse_game_detail(fetch(page, HOST + url, tries=1))
+            # The first detail of a run is the one that has to clear Cloudflare, so it
+            # gets the same patience as the Spielplan. After that the clearance cookie
+            # is warm and one attempt is plenty — which keeps ~17 games well inside the
+            # step timeout. A game we miss is simply picked up by the next run.
+            html = fetch(page, HOST + url, tries=3 if fetched == 0 else 1,
+                         expect="shortSpielort")
+            detail = parse_game_detail(html)
         except Exception as exc:                     # best effort, like the scrape itself
             print(f"WARN  Spieldetail {g['id']} fehlgeschlagen: {exc}", file=sys.stderr)
             blocked += 1
@@ -323,6 +330,9 @@ def attach_details(page, games, cached, now):
             blocked = 0
         else:
             blocked += 1
+            if blocked == 1:                         # once per run: what did we actually get?
+                print(f"WARN  Spieldetail {g['id']} leer — {len(html)} Zeichen, "
+                      f"Titel {page.title()!r}", file=sys.stderr)
     if unreached:
         print(f"NOTE  Nach {GIVE_UP_AFTER} leeren Spieldetails abgebrochen — "
               f"{unreached} Spiele diesmal nicht abgefragt (Cloudflare?). "
