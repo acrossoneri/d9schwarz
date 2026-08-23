@@ -43,6 +43,18 @@ TZ = ZoneInfo("Europe/Zurich")       # the matchcenter prints Swiss local time
 OTHER_AFTER = timedelta(hours=24)
 MAX_OTHER_PER_RUN = 8                # keeps one hourly run's Cloudflare budget sane
 GIVE_UP_AFTER = 3                    # consecutive blocked details -> stop asking this run
+
+# The Spieldetail pages (Aufstellung, Spielort, Drittelsresultate) answer with
+# HTTP 403 and, in four languages:
+#     "Ein maschineller Zugriff ist nicht erlaubt und wurde unterbunden"
+#     "Block Bot Score 1 (fvnws.ch)"
+# That is the SFV declining, not a challenge to sit out, so the scraper does not
+# ask for them. Repeatedly collecting 403s would only raise that bot score and put
+# the Spielplan scrape — which still works and the whole site depends on — at risk.
+# Clubs can request proper access to the Spielbetriebsdaten at support@football.ch;
+# once that is granted, set this to True.
+FETCH_DETAILS = False
+BLOCK_MARKER = "maschineller Zugriff ist nicht erlaubt"
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36")
 
@@ -295,7 +307,7 @@ def attach_details(page, games, cached, now):
         old = cached.get(g["id"])
         if old:
             g["detail"] = old
-        if not url:
+        if not url or not FETCH_DETAILS:
             continue
         if blocked >= GIVE_UP_AFTER:
             unreached += 1
@@ -319,6 +331,11 @@ def attach_details(page, games, cached, now):
             # step timeout. A game we miss is simply picked up by the next run.
             html = fetch(page, HOST + url, tries=3 if fetched == 0 else 1,
                          expect="shortSpielort")
+            if BLOCK_MARKER in html:
+                print("ERROR Spieldetails: der SFV blockiert maschinellen Zugriff "
+                      "(HTTP 403). Abfrage abgebrochen — Zugang via support@football.ch.",
+                      file=sys.stderr)
+                break
             detail = parse_game_detail(html)
         except Exception as exc:                     # best effort, like the scrape itself
             print(f"WARN  Spieldetail {g['id']} fehlgeschlagen: {exc}", file=sys.stderr)
@@ -388,6 +405,9 @@ def main():
 
     played = sum(1 for g in our if g["status"] == "played")
     with_detail = sum(1 for g in games if g.get("detail"))
+    if not FETCH_DETAILS:
+        print("NOTE  Spieldetails abgeschaltet (SFV blockiert maschinellen Zugriff). "
+              "Vorhandene Details bleiben erhalten.")
     print(f"OK  {len(games)} group games | our team: {len(our)} games "
           f"({played} played) | {len(standings)} teams in table | "
           f"{with_detail} Spieldetails ({details} neu geholt) | {now}")

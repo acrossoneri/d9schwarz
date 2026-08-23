@@ -124,7 +124,26 @@ Wie oft geholt wird, steht in `attach_details()`:
 Was nicht geholt wird, behält das Detail des letzten Laufs — eine fehlgeschlagene
 oder ausgelassene Abfrage löscht nie etwas.
 
-Die Detailseiten haben eine **eigene Cloudflare-Prüfung**, die nicht immer aufgeht.
-Darum wird pro Seite nur einmal angeklopft (kein Retry), und nach `GIVE_UP_AFTER`
-leeren Antworten hintereinander bricht der Lauf die Detailabfrage ab, statt
-minutenlang gegen eine Wand zu laufen. Der nächste Lauf fängt wieder von vorn an.
+### ⚠️ Spieldetails sind derzeit abgeschaltet
+
+Die Detailseiten antworten auf maschinelle Abfragen mit **HTTP 403** und im
+Klartext:
+
+> Ein maschineller Zugriff ist nicht erlaubt und wurde unterbunden […]
+> Block Bot Score 1 (fvnws.ch)
+
+Das ist keine Cloudflare-Prüfung, die man aussitzen kann, sondern ein Nein des
+SFV. Darum steht `FETCH_DETAILS = False` in `scrape.py`: der Scraper fragt die
+Seiten gar nicht erst an. Immer wieder 403 einzusammeln würde nur den Bot-Score
+hochtreiben und den Spielplan-Scrape gefährden, der noch funktioniert und an dem
+die ganze Seite hängt.
+
+Der offizielle Weg steht in der Sperrmeldung selbst:
+
+| Wer | Kontakt |
+|-----|---------|
+| SFV-Verein (also wir) | support@football.ch |
+| Kein SFV-Verein | clubservices@football.ch |
+
+Wird der Zugang bewilligt, genügt `FETCH_DETAILS = True` — Parser, Zwischen-
+speicher und Anzeige sind fertig und warten nur auf Daten.
