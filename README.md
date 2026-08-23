@@ -119,13 +119,13 @@ fragt:
 
 | | Wann gefragt wird |
 |---|---|
-| **Unsere Spiele** | erstmals 4 h nach Anpfiff, danach alle 2 h — bis die Aufstellung da ist, dann nie wieder |
+| **Unsere Spiele, vorher** | **ein** Blick rund `PRE_MATCH_LOOK` Stunden vor Anpfiff — nur für den Spielort, und nur solange wir ihn nicht haben |
+| **Unsere Spiele, nachher** | erstmals 4 h nach Anpfiff, danach alle 2 h — bis die Aufstellung da ist, dann nie wieder |
 | **Fremde Spiele** | genau einmal, sobald ihr Wochenende vorbei ist (Montag 00:00), höchstens `MAX_OTHER_PER_RUN` pro Lauf |
 | **Beide** | nach `GIVE_UP_DAYS` Tagen gar nicht mehr — was bis dahin fehlt, kommt nicht mehr |
 
-Vor dem Anpfiff wird nichts geholt. Das kostet den Spielort für kommende Spiele,
-der eigentlich schon vorher publiziert wäre — dafür fragt der Scraper eine
-gesperrte Adresse nicht Woche für Woche ohne Grund an.
+Der Blick davor ist ein einzelner Termin, kein Pollen: Wird er verpasst oder
+abgewiesen, kommt der Spielort eben mit der Abfrage nach dem Spiel.
 
 Was nicht geholt wird, behält das Detail des letzten Laufs — eine fehlgeschlagene
 oder ausgelassene Abfrage löscht nie etwas.

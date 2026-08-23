@@ -43,6 +43,7 @@ TZ = ZoneInfo("Europe/Zurich")       # the matchcenter prints Swiss local time
 # often. Our games start looking 4h after kickoff and try again every couple of
 # hours until the Aufstellung is actually there; everyone else's are fetched once,
 # after their weekend is over and every report has been filed.
+PRE_MATCH_LOOK = 24                  # our games: one look this many hours before kickoff
 OUR_FIRST_AFTER = timedelta(hours=4)
 OUR_RETRY_EVERY = 2                  # hours between our retries, until the data lands
 GIVE_UP_DAYS = 14                    # a report missing this long is never coming
@@ -294,11 +295,25 @@ def _weekend_over(kickoff):
 def wants_detail(game, old, now, ours):
     """Is this game due for a Spieldetail request in this run?
 
-    Ours: nothing before kickoff + OUR_FIRST_AFTER, then one look every
-    OUR_RETRY_EVERY hours until the Aufstellung is there. Everyone else's: exactly
-    once, after their weekend is over. Both give up after GIVE_UP_DAYS."""
+    Ours: one look the day before for the Spielort, then nothing until
+    kickoff + OUR_FIRST_AFTER, then every OUR_RETRY_EVERY hours until the
+    Aufstellung is there. Everyone else's: exactly once, after their weekend is
+    over. Both give up after GIVE_UP_DAYS."""
     kickoff = _kickoff(game)
-    if not kickoff or now < kickoff or now - kickoff > timedelta(days=GIVE_UP_DAYS):
+    if not kickoff:
+        return False
+
+    if now < kickoff:
+        # The Spielort is published in advance and "wo spielen wir am Samstag?" is
+        # worth one question. One scheduled slot, not a poll: if it is missed or
+        # refused, the venue simply arrives with the post-match look instead. (On the
+        # Saturday match-day cron that slot can come round more than once for a Sunday
+        # game — harmless, since the first answer stores the venue and ends it.)
+        if not ours or (old and old.get("venue")):
+            return False
+        return int((kickoff - now).total_seconds() // 3600) == PRE_MATCH_LOOK - 1
+
+    if now - kickoff > timedelta(days=GIVE_UP_DAYS):
         return False
 
     if not ours:
