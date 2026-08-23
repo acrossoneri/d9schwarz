@@ -183,10 +183,16 @@ function scrollToNextMatch() {
 
 function matchCard(m, isPlayed) {
   const li = document.createElement("li");
-  li.className = "match" + (isPlayed ? " clickable" : "");
+  // Upcoming games carry a detail too — the Spielort is published well before
+  // kickoff, and "wo spielen wir am Samstag?" is worth a tap.
+  const hasDetail = isPlayed || !!(m.detail && m.detail.venue);
+  li.className = "match" + (hasDetail ? " clickable" : "");
 
+  // Anspielzeit bleibt auch nach dem Spiel sichtbar: unter dem Resultat, sobald
+  // gespielt wurde — an dessen Stelle, solange das Spiel noch bevorsteht.
+  const kickoff = m.time ? `<span class="kickoff">${esc(m.time)}</span>` : "";
   const scoreHtml = isPlayed
-    ? `<div class="match-score">${m.homeScore}<span>:</span>${m.awayScore}</div>`
+    ? `<div class="match-score">${m.homeScore}<span>:</span>${m.awayScore}${kickoff}</div>`
     : `<div class="match-score small">${esc(m.time || "")}</div>`;
 
   const head = document.createElement("button");
@@ -199,29 +205,45 @@ function matchCard(m, isPlayed) {
       `<div class="row"><span class="name${isUs(m.away) ? " us" : ""}">${esc(m.away)}</span></div>` +
     `</div>` +
     scoreHtml +
-    (isPlayed ? `<span class="chev">▾</span>` : "");
+    (hasDetail ? `<span class="chev">▾</span>` : "");
   li.appendChild(head);
 
-  if (isPlayed) {
+  if (hasDetail) {
     const detail = document.createElement("div");
     detail.className = "match-goals";
-    detail.innerHTML = renderGoalDetail(m);
+    detail.innerHTML = renderMatchDetail(m, isPlayed);
     li.appendChild(detail);
     head.addEventListener("click", () => li.classList.toggle("open"));
   }
   return li;
 }
 
-function renderGoalDetail(m) {
-  const scorers = m.scorers || [];
-  let html = m.venue ? `<p class="venue">📍 ${esc(m.venue)} · ${fmtDateLongSafe(m.date)}</p>` : "";
-  if (!scorers.length) {
-    html += `<p class="none">Keine Torschützen erfasst.</p>`;
-    return html;
+// The Spielbericht of one game: Spielort and Drittel from the matchcenter, our
+// hand-entered Torschützen, then Verlauf and Aufstellung — also from the
+// matchcenter, which publishes both teams' line-ups once a game has been played.
+function renderMatchDetail(m, isPlayed) {
+  const d = m.detail || {};
+  const venue = d.venue || m.venue;
+  let html = venue ? `<p class="venue">📍 ${esc(venue)} · ${fmtDateLongSafe(m.date)}</p>` : "";
+
+  if (Array.isArray(d.periods) && d.periods.length) {
+    html += `<p class="periods"><span>Drittel</span> ${d.periods.map(esc).join(" · ")}</p>`;
   }
-  // Group by team (home first, then away), like a game report.
+  if (!isPlayed) return html || `<p class="none">Noch keine Angaben.</p>`;
+
+  html += renderScorerLines(m);
+  html += renderEventLines(d.events);
+  html += renderLineups(d.lineups);
+  return html;
+}
+
+function renderScorerLines(m) {
+  const scorers = (m.scorers || []).filter(g => g && g.player);
+  if (!scorers.length) return `<p class="none">Keine Torschützen erfasst.</p>`;
+  // Grouped by team (home first) like a game report — in practice only ours.
+  let html = "";
   [m.home, m.away].forEach(team => {
-    const list = scorers.filter(g => g && g.player && g.team === team);
+    const list = scorers.filter(g => g.team === team);
     if (!list.length) return;
     html += `<strong${isUs(team) ? ' class="us"' : ""}>${esc(team)}</strong><ul>`;
     list.forEach(g => {
@@ -232,22 +254,64 @@ function renderGoalDetail(m) {
   return html;
 }
 
+// The matchcenter names each event by its icon: gelb, rot, gelbrot, …
+const EVENT_ICON = { gelb: "🟨", rot: "🟥", gelbrot: "🟨🟥", tor: "⚽", wechsel: "🔁" };
+
+function renderEventLines(events) {
+  if (!Array.isArray(events) || !events.length) return "";
+  let html = `<strong>Verlauf</strong><ul>`;
+  events.forEach(e => {
+    const icon = EVENT_ICON[e.kind] || "•";
+    html += `<li><span>${icon} ${esc(e.text || "")}</span>` +
+            `<span class="min">${e.minute ? esc(e.minute) + "'" : ""}</span></li>`;
+  });
+  return html + `</ul>`;
+}
+
+function renderLineups(lineups) {
+  if (!Array.isArray(lineups) || !lineups.length) return "";
+  let html = `<strong>Aufstellung</strong><div class="lineups">`;
+  lineups.forEach(l => {
+    html += `<div class="lineup">` +
+            `<strong${isUs(l.team) ? ' class="us"' : ""}>${esc(l.team || "")}</strong>`;
+    html += playerBlock(l.starting);
+    if ((l.subs || []).length) {
+      html += `<p class="sub-title">Ersatz</p>` + playerBlock(l.subs);
+    }
+    if ((l.coaches || []).length) {
+      html += `<p class="sub-title">Trainer</p>` +
+              `<p class="coaches">${l.coaches.map(c => esc(c.name || "")).join(", ")}</p>`;
+    }
+    html += `</div>`;
+  });
+  return html + `</div>`;
+}
+
+function playerBlock(list) {
+  if (!Array.isArray(list) || !list.length) return "";
+  return `<ul class="xi">` + list.map(p =>
+    `<li class="${p.unused ? "unused" : ""}">` +
+      `<span class="nr">${p.number != null ? esc(p.number) : ""}</span>` +
+      `<span class="pn">${esc(p.name || "")}${p.captain ? ' <span class="capt">C</span>' : ""}</span>` +
+      `<span class="pos">${esc(p.position || (p.unused ? "kein Einsatz" : ""))}</span>` +
+    `</li>`).join("") + `</ul>`;
+}
+
+// Torschützen werden von Hand erfasst und darum nur für unser eigenes Team —
+// eine Team-Auswahl gäbe es hier nichts zu filtern.
 function renderScorers() {
   const all = (DATA.matches && DATA.matches.matches) || [];
   const our = DATA.config && DATA.config.ourTeam;
-  const f = filterValue("scorer-filter");
-  const showTeam = f === "__all__";
 
-  // key = team||player -> { player, team, total, goals: [{date, opponent, minute}] }
+  // key = player -> { player, team, total, goals: [{date, opponent, minute}] }
   const stats = new Map();
   all.forEach(m => {
     (m.scorers || []).forEach(g => {
       if (!g || !g.player) return;
-      const team = g.team || "";
-      if (f === "__us__" && team !== our) return;
-      if (f !== "__us__" && f !== "__all__" && team !== f) return;
+      const team = g.team || our;
+      if (team !== our) return;
       const opponent = m.home === team ? m.away : m.home;
-      const key = team + "||" + g.player;
+      const key = g.player;
       let s = stats.get(key);
       if (!s) { s = { player: g.player, team, total: 0, goals: [] }; stats.set(key, s); }
       s.total += 1;
@@ -274,8 +338,7 @@ function renderScorers() {
     head.type = "button";
     head.className = "scorer-head";
     const last = s.goals.find(g => g.date);
-    const sub = [showTeam ? esc(s.team) : "",
-                 last ? "letztes Tor: " + fmtDate(last.date) : ""].filter(Boolean);
+    const sub = [last ? "letztes Tor: " + fmtDate(last.date) : ""].filter(Boolean);
     head.innerHTML =
       `<span class="scorer-rank">${i + 1}</span>` +
       `<span class="sc-name">${esc(s.player)}` +
@@ -370,7 +433,6 @@ function renderAll() {
   mergeScorers();
   renderHeader();
   populateSelect("team-filter");
-  populateSelect("scorer-filter");
   renderStandings();
   renderMatches();
   renderScorers();
@@ -414,8 +476,6 @@ function wire() {
   if (btn) btn.addEventListener("click", () => refresh(true));
   const filter = document.getElementById("team-filter");
   if (filter) filter.addEventListener("change", () => { renderMatches(); scrollToNextMatch(); });
-  const scorerFilter = document.getElementById("scorer-filter");
-  if (scorerFilter) scorerFilter.addEventListener("change", () => renderScorers());
   const standings = document.getElementById("standings-table");
   if (standings) standings.addEventListener("click", (e) => {
     const link = e.target.closest(".team-link");
@@ -443,7 +503,7 @@ const App = {
     DATA.config = DATA.standings = DATA.matches = DATA.scorers = null;
     lastLoad = 0;
     document.querySelector("#standings-table tbody").innerHTML = "";
-    ["match-list", "scorer-list", "team-filter", "scorer-filter",
+    ["match-list", "scorer-list", "team-filter",
      "settings-match", "scorer-editor"].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.innerHTML = "";

@@ -213,7 +213,8 @@ table.standings { width: 100%; border-collapse: collapse; background: var(--card
   padding: 2px 8px; border-radius: 999px;
 }
 .match-head {
-  width: 100%; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px;
+  /* date | teams | score | chevron — four columns, or the chevron wraps onto a row of its own */
+  width: 100%; display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 10px;
   padding: 12px 14px; background: none; border: 0; color: inherit; font: inherit; text-align: left;
 }
 .match.clickable .match-head { cursor: pointer; }
@@ -225,6 +226,10 @@ table.standings { width: 100%; border-collapse: collapse; background: var(--card
 .match-teams .name.us { color: var(--red); }
 .match-score { font-weight: 800; font-size: 1.05rem; font-variant-numeric: tabular-nums; text-align: right; min-width: 46px; }
 .match-score.small { font-size: .8rem; font-weight: 600; color: var(--muted); }
+.match-score .kickoff {
+  display: block; font-size: .68rem; font-weight: 600;
+  color: var(--muted); margin-top: 1px;
+}
 .chev { color: var(--muted); font-size: .8rem; margin-left: 4px; }
 
 .match-goals { padding: 0 14px 12px 14px; border-top: 1px dashed var(--line); display: none; }
@@ -236,6 +241,40 @@ table.standings { width: 100%; border-collapse: collapse; background: var(--card
 .match-goals .none { color: var(--muted); font-size: .84rem; font-style: italic; }
 .match-goals strong { display: block; font-size: .82rem; margin: 8px 0 4px; }
 .match-goals strong.us { color: var(--red); }
+
+/* Drittelsresultate — D-9 plays thirds, so the matchcenter reports three scores. */
+.match-goals .periods { font-size: .8rem; margin: 6px 0; font-variant-numeric: tabular-nums; }
+.match-goals .periods span {
+  display: inline-block; margin-right: 6px; padding: 1px 7px; border-radius: 999px;
+  background: var(--bg); border: 1px solid var(--line);
+  font-size: .66rem; font-weight: 700; letter-spacing: .03em; color: var(--muted);
+}
+
+/* Aufstellung — side by side where there is room, stacked on a phone. */
+.lineups { display: grid; gap: 10px; margin-top: 4px; }
+@media (min-width: 620px) { .lineups { grid-template-columns: 1fr 1fr; gap: 18px; } }
+.match-goals .sub-title {
+  font-size: .68rem; font-weight: 700; letter-spacing: .03em; text-transform: uppercase;
+  color: var(--muted); margin: 8px 0 3px;
+}
+.match-goals .coaches { font-size: .82rem; color: var(--muted); margin: 0; }
+.match-goals ul.xi { gap: 2px; }
+.match-goals ul.xi li {
+  display: grid; grid-template-columns: 20px 1fr auto; gap: 8px;
+  align-items: baseline; font-size: .84rem;
+}
+.match-goals ul.xi .nr {
+  color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; font-size: .78rem;
+}
+.match-goals ul.xi .pos {
+  color: var(--muted); font-size: .72rem; text-align: right;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.match-goals ul.xi li.unused .pn { color: var(--muted); }
+.match-goals ul.xi .capt {
+  font-size: .6rem; font-weight: 700; background: var(--red); color: #fff;
+  border-radius: 999px; padding: 0 5px; vertical-align: 1px;
+}
 
 /* Scorers */
 .scorer-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
@@ -278,32 +317,16 @@ table.standings { width: 100%; border-collapse: collapse; background: var(--card
 .btn-slim { padding: 7px 10px; font-size: .82rem; }
 
 .scorer-editor { display: grid; gap: 8px; margin-bottom: 10px; }
-.sc-row { display: grid; grid-template-columns: 1fr minmax(0, 1fr) 62px auto; gap: 6px; align-items: center; }
-/* On a phone the team names are far too long to share a row with the name. */
+/* Name + Minute + Löschen — ohne Team-Auswahl passt die Zeile auch auf ein Handy. */
+.sc-row { display: grid; grid-template-columns: 1fr 62px auto; gap: 6px; align-items: center; }
 @media (max-width: 560px) {
-  .sc-row {
-    grid-template-columns: 1fr 62px auto;
-    grid-template-areas: "name name name" "team min del";
-    gap: 6px;
-    padding: 8px; border: 1px solid var(--line); border-radius: var(--radius);
-    background: var(--card);
-  }
-  .sc-row .sc-player { grid-area: name; }
-  .sc-row select.sc-team { grid-area: team; max-width: none; }
-  .sc-row .sc-min { grid-area: min; }
-  .sc-row .sc-del { grid-area: del; }
-  /* a roster row is just name + delete, so it stays on one line */
-  .sc-row.player-row {
-    grid-template-columns: 1fr auto;
-    grid-template-areas: "name del";
-    border: 0; padding: 0; background: none;
-  }
   /* the name gets its own line; role/password/delete sit underneath */
   .user-row .user-name { grid-column: 1 / -1; }
 }
 .sc-row.player-row { grid-template-columns: 1fr auto; }
 /* `select.sc-team`, not `.sc-team` — the Torschützen list uses a <span> of the
-   same name for its subtitle, and it must not turn into a form control. */
+   same name for its subtitle, and it must not turn into a form control.
+   The <select> itself is now only used by the role picker in the user list. */
 .sc-row input, select.sc-team {
   font: inherit; font-size: .9rem; color: var(--ink); min-width: 0;
   background: var(--card); border: 1px solid var(--line); border-radius: 9px; padding: 9px 10px;

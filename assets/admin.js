@@ -27,6 +27,14 @@ const ADMIN = (() => {
   const el = id => document.getElementById(id);
   const allMatches = () => (DATA.matches && DATA.matches.matches) || [];
   const byMatch = () => (DATA.scorers && DATA.scorers.byMatch) || {};
+  const ourTeam = () => (DATA.config && DATA.config.ourTeam) || "";
+
+  /* Torschützen werden von Hand erfasst, darum nur für unser eigenes Team: für
+     fremde Paarungen liegen die Namen gar nicht vor. Deshalb stehen hier auch
+     nur unsere Spiele zur Auswahl, und jede Zeile gehört automatisch uns. */
+  const ourMatches = () => allMatches()
+    .filter(m => m.home === ourTeam() || m.away === ourTeam())
+    .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
 
   /* ---------- token ---------- */
 
@@ -76,37 +84,25 @@ const ADMIN = (() => {
   function renderMatchPicker() {
     const sel = el("settings-match");
     if (!sel) return;
-    const our = DATA.config && DATA.config.ourTeam;
-    const byDateDesc = (a, b) => (b.date || "").localeCompare(a.date || "");
-    const ours = allMatches().filter(m => m.home === our || m.away === our).sort(byDateDesc);
-    const rest = allMatches().filter(m => m.home !== our && m.away !== our).sort(byDateDesc);
+    const ours = ourMatches();
 
     sel.innerHTML = "";
-    const group = (label, list) => {
-      if (!list.length) return;
-      const g = document.createElement("optgroup");
-      g.label = label;
-      list.forEach(m => {
-        const o = document.createElement("option");
-        o.value = m.id;
-        // textContent, never innerHTML — team names come from scraped HTML.
-        o.textContent = matchLabel(m) + (byMatch()[m.id] ? "  ●" : "");
-        g.appendChild(o);
-      });
-      sel.appendChild(g);
-    };
-    group("Unsere Spiele", ours);
-    group("Andere Spiele", rest);
+    ours.forEach(m => {
+      const o = document.createElement("option");
+      o.value = m.id;
+      // textContent, never innerHTML — team names come from scraped HTML.
+      o.textContent = matchLabel(m) + (byMatch()[m.id] ? "  ●" : "");
+      sel.appendChild(o);
+    });
 
-    const ids = allMatches().map(m => m.id);
-    if (!ids.includes(selectedId)) selectedId = (ours[0] || rest[0] || {}).id || null;
+    if (!ours.some(m => m.id === selectedId)) selectedId = (ours[0] || {}).id || null;
     if (selectedId) sel.value = selectedId;
   }
 
   /* ---------- scorer rows ---------- */
 
   function currentMatch() {
-    return allMatches().find(m => m.id === selectedId) || null;
+    return ourMatches().find(m => m.id === selectedId) || null;
   }
 
   function rowsFor(m) {
@@ -115,6 +111,11 @@ const ADMIN = (() => {
     const list = byMatch()[m.id];
     return Array.isArray(list) ? list : (m.scorers || []);
   }
+
+  // Erfasst wird nur noch unser Team. Ältere Einträge gegnerischer Teams werden
+  // darum nicht mehr angezeigt — renderEditor weist auf sie hin, bevor ein
+  // Speichern dieses Spiels sie fallen lässt.
+  const isOurs = s => !s || !s.team || s.team === ourTeam();
 
   function makeRow(m, scorer, index) {
     const row = document.createElement("div");
@@ -129,16 +130,6 @@ const ADMIN = (() => {
     // Suggests our squad while still allowing a typed-in opponent name.
     name.setAttribute("list", "roster-list");
     name.value = (scorer && scorer.player) || "";
-
-    const team = document.createElement("select");
-    team.className = "sc-team";
-    [m.home, m.away].forEach(t => {
-      const o = document.createElement("option");
-      o.value = t;
-      o.textContent = t;
-      team.appendChild(o);
-    });
-    team.value = (scorer && scorer.team) || m.home;
 
     const min = document.createElement("input");
     min.type = "number";
@@ -161,10 +152,10 @@ const ADMIN = (() => {
       renderEditor();
     });
 
-    [name, team, min].forEach(inp =>
+    [name, min].forEach(inp =>
       inp.addEventListener("input", () => { commitRows(); markDirty(); }));
 
-    row.append(name, team, min, del);
+    row.append(name, min, del);
     return row;
   }
 
@@ -177,15 +168,23 @@ const ADMIN = (() => {
       box.appendChild(hint("Kein Spiel ausgewählt."));
       return;
     }
-    const list = rowsFor(m);
+    const list = rowsFor(m).filter(isOurs);
+    const dropped = rowsFor(m).length - list.length;
     if (!list.length) box.appendChild(hint("Noch keine Torschützen für dieses Spiel."));
     list.forEach((s, i) => box.appendChild(makeRow(m, s, i)));
+    if (dropped) {
+      box.appendChild(hint(`${dropped} ältere${dropped === 1 ? "r Eintrag" : " Einträge"} `
+                          + `gegnerischer Teams werden beim nächsten Speichern entfernt.`, "warn"));
+    }
 
+    // Nur unsere Tore werden erfasst, also zählt auch nur unsere Hälfte des Resultats.
     const total = list.filter(s => s && s.player && s.player.trim()).length;
-    const expected = m.status === "played" ? (m.homeScore || 0) + (m.awayScore || 0) : null;
+    const expected = m.status === "played"
+      ? (m.home === ourTeam() ? m.homeScore : m.awayScore) || 0
+      : null;
     if (expected != null && total !== expected) {
-      box.appendChild(hint(`Resultat ${m.homeScore}:${m.awayScore} = ${expected} Tore, `
-                          + `erfasst sind ${total}.`, "warn"));
+      box.appendChild(hint(`Resultat ${m.homeScore}:${m.awayScore} — ${expected} eigene `
+                          + `${expected === 1 ? "Tor" : "Tore"}, erfasst sind ${total}.`, "warn"));
     }
   }
 
@@ -204,7 +203,7 @@ const ADMIN = (() => {
     const out = [];
     el("scorer-editor").querySelectorAll(".sc-row").forEach(row => {
       const player = row.querySelector(".sc-player").value.trim();
-      const entry = { player, team: row.querySelector(".sc-team").value };
+      const entry = { player, team: ourTeam() };
       const min = parseInt(row.querySelector(".sc-min").value, 10);
       if (Number.isFinite(min)) entry.minute = min;
       out.push(entry);
@@ -216,9 +215,7 @@ const ADMIN = (() => {
     const m = currentMatch();
     if (!m) return;
     commitRows();
-    const our = DATA.config && DATA.config.ourTeam;
-    const team = (m.home === our || m.away === our) ? our : m.home;
-    byMatch()[m.id].push({ player: "", team });
+    byMatch()[m.id].push({ player: "", team: ourTeam() });
     markDirty();
     renderEditor();
     const last = el("scorer-editor").querySelector(".sc-row:last-of-type .sc-player");

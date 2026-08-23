@@ -96,3 +96,26 @@ SITE_USER=... SITE_PASSWORD=... python scraper/scrape.py
 
 Braucht die Zugangsdaten, weil er verschlüsselt schreibt. Unveränderte Daten ergeben
 byte-identische Dateien — also keine leeren Commits.
+
+### Spieldetails
+
+Neben der Gruppen-Spielplanseite holt der Scraper zu jedem Spiel auch die
+**Spieldetail-Seite**. Von dort kommen:
+
+| Feld | Inhalt |
+|------|--------|
+| `venue` | Spielort — steht schon **vor** dem Anpfiff, darum sind auch kommende Spiele aufklappbar |
+| `periods` | Drittelsresultate, z. B. `0:1 / 3:3 / 6:6` |
+| `events` | Verlauf: Karten mit Minute (**Torschützen stehen dort im D-9 nicht** — die werden von Hand erfasst) |
+| `lineups` | Aufstellung **beider** Teams: Startformation mit Nummer und Position, Ersatzbank inkl. „kein Einsatz“, Captain, Trainer |
+
+Wie oft geholt wird, steht in `attach_details()`:
+
+* **Unsere Spiele** — bei jedem Lauf, also stündlich.
+* **Fremde Spiele** — einmalig, 24 h nach Anpfiff (`OTHER_AFTER`). Der Bericht ist
+  dann fertig und ändert sich nicht mehr; alle 45 Spiele stündlich durch die
+  Cloudflare-Prüfung zu schicken wäre langsam und unnötig. Pro Lauf werden
+  höchstens `MAX_OTHER_PER_RUN` davon geholt, der Rest kommt im nächsten Lauf.
+
+Was nicht geholt wird, behält das Detail des letzten Laufs — eine fehlgeschlagene
+oder ausgelassene Abfrage löscht nie etwas.

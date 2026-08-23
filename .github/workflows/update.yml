@@ -7,6 +7,11 @@ name: Update data
 # BEST-EFFORT: if it can't get through, the run keeps the previous data instead of
 # failing (no error emails).
 #
+# Besides the group schedule the scraper opens each game's Spieldetail page for the
+# Aufstellung, Spielort and Drittelsresultate — ours every run, other teams' games
+# once a day after kickoff. That makes a run noticeably longer than a bare scrape,
+# hence the step timeout below.
+#
 # The published data files are encrypted, so the scraper needs the site
 # credentials. Set them under Settings -> Secrets and variables -> Actions:
 #   SITE_USER, SITE_PASSWORD
@@ -39,6 +44,7 @@ jobs:
           python -m playwright install --with-deps chromium
 
       - name: Scrape matchcenter (best effort)
+        timeout-minutes: 25       # a hung Cloudflare challenge must not burn the hour
         env:
           SITE_USER: ${{ secrets.SITE_USER }}
           SITE_PASSWORD: ${{ secrets.SITE_PASSWORD }}
