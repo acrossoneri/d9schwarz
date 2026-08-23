@@ -38,11 +38,16 @@ BASE = HOST + "/default.aspx?oid=8&lng=1&v=508&t=63291&ls=26142&sg=71135"
 SPIELPLAN_URL = BASE + "&a=sp"       # whole group schedule (all teams)
 TZ = ZoneInfo("Europe/Zurich")       # the matchcenter prints Swiss local time
 
-# Other teams' game reports are fetched once, this long after kickoff: by then the
-# report is filled in and never changes again. Ours are refreshed every run.
-OTHER_AFTER = timedelta(hours=24)
-MAX_OTHER_PER_RUN = 8                # keeps one hourly run's Cloudflare budget sane
-GIVE_UP_AFTER = 3                    # consecutive blocked details -> stop asking this run
+# When a Spieldetail is worth asking for. Deliberately sparse: the pages belong to
+# the SFV, and a report nobody has written yet does not get written by asking more
+# often. Our games start looking 4h after kickoff and try again every couple of
+# hours until the Aufstellung is actually there; everyone else's are fetched once,
+# after their weekend is over and every report has been filed.
+OUR_FIRST_AFTER = timedelta(hours=4)
+OUR_RETRY_EVERY = 2                  # hours between our retries, until the data lands
+GIVE_UP_DAYS = 14                    # a report missing this long is never coming
+MAX_OTHER_PER_RUN = 8                # bounds the Monday batch
+GIVE_UP_AFTER = 3                    # consecutive empty details -> stop asking this run
 
 # The Spieldetail pages (Aufstellung, Spielort, Drittelsresultate) answer with
 # HTTP 403 and, in four languages:
@@ -51,9 +56,10 @@ GIVE_UP_AFTER = 3                    # consecutive blocked details -> stop askin
 # That is the SFV declining, not a challenge to sit out, so the scraper does not
 # ask for them. Repeatedly collecting 403s would only raise that bot score and put
 # the Spielplan scrape — which still works and the whole site depends on — at risk.
-# Clubs can request proper access to the Spielbetriebsdaten at support@football.ch;
-# once that is granted, set this to True.
-FETCH_DETAILS = False
+# Clubs can request proper access to the Spielbetriebsdaten at support@football.ch.
+# Until that is granted the block may well still be in force — the schedule above
+# keeps this to a handful of requests, and a blocked run stops at the first one.
+FETCH_DETAILS = True
 BLOCK_MARKER = "maschineller Zugriff ist nicht erlaubt"
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36")
@@ -80,6 +86,8 @@ def fetch(page, url, tries=3, expect=None):
         for _ in range(20):  # up to ~40s per attempt
             page.wait_for_timeout(2000)
             html = page.content()
+            if BLOCK_MARKER in html:
+                return html          # a refusal is final; polling it 20x helps nobody
             if _looks_real(html, page.title()) and (not expect or expect in html):
                 return html
         page.wait_for_timeout(3000)  # brief backoff, then retry
@@ -276,6 +284,36 @@ def _kickoff(game):
         return None
 
 
+def _weekend_over(kickoff):
+    """Midnight starting the Monday after the game — 'once the weekend is done'."""
+    days = ((0 - kickoff.weekday()) % 7) or 7        # Mon=0; a Monday game waits a week
+    return (kickoff + timedelta(days=days)).replace(
+        hour=0, minute=0, second=0, microsecond=0)
+
+
+def wants_detail(game, old, now, ours):
+    """Is this game due for a Spieldetail request in this run?
+
+    Ours: nothing before kickoff + OUR_FIRST_AFTER, then one look every
+    OUR_RETRY_EVERY hours until the Aufstellung is there. Everyone else's: exactly
+    once, after their weekend is over. Both give up after GIVE_UP_DAYS."""
+    kickoff = _kickoff(game)
+    if not kickoff or now < kickoff or now - kickoff > timedelta(days=GIVE_UP_DAYS):
+        return False
+
+    if not ours:
+        return not old and game["status"] == "played" and now >= _weekend_over(kickoff)
+
+    if old and old.get("lineups"):
+        return False                                 # already have what we came for
+    elapsed = now - kickoff
+    if elapsed < OUR_FIRST_AFTER:
+        return False
+    # Hourly cron, so whole hours past the first look decide whose turn it is.
+    slot = int((elapsed - OUR_FIRST_AFTER).total_seconds() // 3600)
+    return slot % OUR_RETRY_EVERY == 0
+
+
 def previous_details(key):
     """{game id: detail} from the last run, so a skipped or failed fetch keeps
     what we already had instead of blanking it."""
@@ -290,16 +328,12 @@ def previous_details(key):
 def attach_details(page, games, cached, now):
     """Give every game its Spieldetail, fetching what needs fetching.
 
-    Our own games are refreshed on every run — they are the ones anybody looks at.
-    Other teams' games are fetched once, OTHER_AFTER past kickoff: the report is
-    complete by then and never changes again, and putting all 45 of them through
-    Cloudflare every hour would be both slow and rude. Whatever is not fetched
-    keeps the detail the previous run stored.
+    wants_detail() decides whose turn it is; whatever is not fetched keeps the detail
+    the previous run stored, so a skip or a failure never blanks a game.
 
-    Detail pages get their own Cloudflare challenge, and it is not always cleared.
-    Once GIVE_UP_AFTER of them in a row come back empty, the run stops asking: on a
-    bad day that would be minutes of waiting for pages we are not going to get, and
-    the next run starts fresh anyway."""
+    Two brakes on top: GIVE_UP_AFTER empty answers in a row end the run's detail
+    phase, and the SFV's refusal page ends it immediately — that one is a policy, not
+    a hiccup, and asking again in the same run would only make it worse."""
     budget, deferred, fetched = MAX_OTHER_PER_RUN, 0, 0
     blocked, unreached = 0, 0
     for g in games:
@@ -309,28 +343,23 @@ def attach_details(page, games, cached, now):
             g["detail"] = old
         if not url or not FETCH_DETAILS:
             continue
+        ours = OUR_TEAM in (g["home"], g["away"])
+        if not wants_detail(g, old, now, ours):
+            continue
         if blocked >= GIVE_UP_AFTER:
             unreached += 1
             continue
-
-        if OUR_TEAM not in (g["home"], g["away"]):
-            kickoff = _kickoff(g)
-            if old or g["status"] != "played" or not kickoff:
-                continue
-            if now - kickoff < OTHER_AFTER:
-                continue
+        if not ours:
             if budget <= 0:
                 deferred += 1
                 continue
             budget -= 1
 
         try:
-            # The first detail of a run is the one that has to clear Cloudflare, so it
-            # gets the same patience as the Spielplan. After that the clearance cookie
-            # is warm and one attempt is plenty — which keeps ~17 games well inside the
-            # step timeout. A game we miss is simply picked up by the next run.
-            html = fetch(page, HOST + url, tries=3 if fetched == 0 else 1,
-                         expect="shortSpielort")
+            # One attempt: the schedule already spaces these out, and a page that is
+            # not there now will not be there 40 seconds later — the next slot can have
+            # it. A refusal short-circuits inside fetch().
+            html = fetch(page, HOST + url, tries=1, expect="shortSpielort")
             if BLOCK_MARKER in html:
                 print("ERROR Spieldetails: der SFV blockiert maschinellen Zugriff "
                       "(HTTP 403). Abfrage abgebrochen — Zugang via support@football.ch.",

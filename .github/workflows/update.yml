@@ -8,9 +8,11 @@ name: Update data
 # failing (no error emails).
 #
 # Besides the group schedule the scraper opens each game's Spieldetail page for the
-# Aufstellung, Spielort and Drittelsresultate — ours every run, other teams' games
-# once a day after kickoff. That makes a run noticeably longer than a bare scrape,
-# hence the step timeout below.
+# Aufstellung, Spielort and Drittelsresultate — ours from 4h after kickoff, then
+# every 2h until the line-up is there; everyone else's once their weekend is over.
+# Note the SFV currently answers those pages with HTTP 403 ("maschineller Zugriff
+# ist nicht erlaubt"); the scraper stops at the first refusal, so a blocked run
+# costs one request. See the README for the access request that would lift it.
 #
 # The published data files are encrypted, so the scraper needs the site
 # credentials. Set them under Settings -> Secrets and variables -> Actions:

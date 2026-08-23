@@ -108,23 +108,29 @@ Neben der Gruppen-Spielplanseite holt der Scraper zu jedem Spiel auch die
 
 | Feld | Inhalt |
 |------|--------|
-| `venue` | Spielort — steht schon **vor** dem Anpfiff, darum sind auch kommende Spiele aufklappbar |
+| `venue` | Spielort — beim Verband schon vor dem Anpfiff da, geholt wird er aber erst danach (siehe Zeitplan) |
 | `periods` | Drittelsresultate, z. B. `0:1 / 3:3 / 6:6` |
 | `events` | Verlauf: Karten mit Minute (**Torschützen stehen dort im D-9 nicht** — die werden von Hand erfasst) |
 | `lineups` | Aufstellung **beider** Teams: Startformation mit Nummer und Position, Ersatzbank inkl. „kein Einsatz“, Captain, Trainer |
 
-Wie oft geholt wird, steht in `attach_details()`:
+Wie oft geholt wird, entscheidet `wants_detail()` — bewusst sparsam, denn ein
+Bericht, den noch niemand geschrieben hat, entsteht nicht dadurch, dass man öfter
+fragt:
 
-* **Unsere Spiele** — bei jedem Lauf, also stündlich.
-* **Fremde Spiele** — einmalig, 24 h nach Anpfiff (`OTHER_AFTER`). Der Bericht ist
-  dann fertig und ändert sich nicht mehr; alle 45 Spiele stündlich durch die
-  Cloudflare-Prüfung zu schicken wäre langsam und unnötig. Pro Lauf werden
-  höchstens `MAX_OTHER_PER_RUN` davon geholt, der Rest kommt im nächsten Lauf.
+| | Wann gefragt wird |
+|---|---|
+| **Unsere Spiele** | erstmals 4 h nach Anpfiff, danach alle 2 h — bis die Aufstellung da ist, dann nie wieder |
+| **Fremde Spiele** | genau einmal, sobald ihr Wochenende vorbei ist (Montag 00:00), höchstens `MAX_OTHER_PER_RUN` pro Lauf |
+| **Beide** | nach `GIVE_UP_DAYS` Tagen gar nicht mehr — was bis dahin fehlt, kommt nicht mehr |
+
+Vor dem Anpfiff wird nichts geholt. Das kostet den Spielort für kommende Spiele,
+der eigentlich schon vorher publiziert wäre — dafür fragt der Scraper eine
+gesperrte Adresse nicht Woche für Woche ohne Grund an.
 
 Was nicht geholt wird, behält das Detail des letzten Laufs — eine fehlgeschlagene
 oder ausgelassene Abfrage löscht nie etwas.
 
-### ⚠️ Spieldetails sind derzeit abgeschaltet
+### ⚠️ Der SFV blockiert maschinellen Zugriff
 
 Die Detailseiten antworten auf maschinelle Abfragen mit **HTTP 403** und im
 Klartext:
@@ -132,11 +138,9 @@ Klartext:
 > Ein maschineller Zugriff ist nicht erlaubt und wurde unterbunden […]
 > Block Bot Score 1 (fvnws.ch)
 
-Das ist keine Cloudflare-Prüfung, die man aussitzen kann, sondern ein Nein des
-SFV. Darum steht `FETCH_DETAILS = False` in `scrape.py`: der Scraper fragt die
-Seiten gar nicht erst an. Immer wieder 403 einzusammeln würde nur den Bot-Score
-hochtreiben und den Spielplan-Scrape gefährden, der noch funktioniert und an dem
-die ganze Seite hängt.
+Das ist keine Cloudflare-Prüfung, die man aussitzen kann, sondern ein Nein. Der
+Scraper erkennt diese Seite und bricht die Detailabfrage sofort ab — ein
+gesperrter Lauf kostet damit genau **eine** Anfrage, nicht neun.
 
 Der offizielle Weg steht in der Sperrmeldung selbst:
 
@@ -145,5 +149,6 @@ Der offizielle Weg steht in der Sperrmeldung selbst:
 | SFV-Verein (also wir) | support@football.ch |
 | Kein SFV-Verein | clubservices@football.ch |
 
-Wird der Zugang bewilligt, genügt `FETCH_DETAILS = True` — Parser, Zwischen-
-speicher und Anzeige sind fertig und warten nur auf Daten.
+Solange das nicht bewilligt ist, laufen die Abfragen ins Leere und die Seite
+zeigt schlicht keine Details. Parser, Zwischenspeicher und Anzeige sind fertig
+und warten nur auf Daten.
