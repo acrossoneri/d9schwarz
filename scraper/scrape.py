@@ -42,6 +42,7 @@ TZ = ZoneInfo("Europe/Zurich")       # the matchcenter prints Swiss local time
 # report is filled in and never changes again. Ours are refreshed every run.
 OTHER_AFTER = timedelta(hours=24)
 MAX_OTHER_PER_RUN = 8                # keeps one hourly run's Cloudflare budget sane
+GIVE_UP_AFTER = 3                    # consecutive blocked details -> stop asking this run
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36")
 
@@ -277,14 +278,23 @@ def attach_details(page, games, cached, now):
     Other teams' games are fetched once, OTHER_AFTER past kickoff: the report is
     complete by then and never changes again, and putting all 45 of them through
     Cloudflare every hour would be both slow and rude. Whatever is not fetched
-    keeps the detail the previous run stored."""
+    keeps the detail the previous run stored.
+
+    Detail pages get their own Cloudflare challenge, and it is not always cleared.
+    Once GIVE_UP_AFTER of them in a row come back empty, the run stops asking: on a
+    bad day that would be minutes of waiting for pages we are not going to get, and
+    the next run starts fresh anyway."""
     budget, deferred, fetched = MAX_OTHER_PER_RUN, 0, 0
+    blocked, unreached = 0, 0
     for g in games:
         url = g.pop("_url", None)
         old = cached.get(g["id"])
         if old:
             g["detail"] = old
         if not url:
+            continue
+        if blocked >= GIVE_UP_AFTER:
+            unreached += 1
             continue
 
         if OUR_TEAM not in (g["home"], g["away"]):
@@ -305,10 +315,18 @@ def attach_details(page, games, cached, now):
             detail = parse_game_detail(fetch(page, HOST + url, tries=1))
         except Exception as exc:                     # best effort, like the scrape itself
             print(f"WARN  Spieldetail {g['id']} fehlgeschlagen: {exc}", file=sys.stderr)
+            blocked += 1
             continue
         if detail:                                   # never let a blocked page blank a game
             g["detail"] = detail
             fetched += 1
+            blocked = 0
+        else:
+            blocked += 1
+    if unreached:
+        print(f"NOTE  Nach {GIVE_UP_AFTER} leeren Spieldetails abgebrochen — "
+              f"{unreached} Spiele diesmal nicht abgefragt (Cloudflare?). "
+              f"Bestehende Details bleiben erhalten.")
     if deferred:
         print(f"NOTE  {deferred} fremde Spiele diesmal ausgelassen "
               f"(max {MAX_OTHER_PER_RUN} pro Lauf) — sie kommen im nächsten Lauf dran.")

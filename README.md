@@ -119,3 +119,8 @@ Wie oft geholt wird, steht in `attach_details()`:
 
 Was nicht geholt wird, behält das Detail des letzten Laufs — eine fehlgeschlagene
 oder ausgelassene Abfrage löscht nie etwas.
+
+Die Detailseiten haben eine **eigene Cloudflare-Prüfung**, die nicht immer aufgeht.
+Darum wird pro Seite nur einmal angeklopft (kein Retry), und nach `GIVE_UP_AFTER`
+leeren Antworten hintereinander bricht der Lauf die Detailabfrage ab, statt
+minutenlang gegen eine Wand zu laufen. Der nächste Lauf fängt wieder von vorn an.
