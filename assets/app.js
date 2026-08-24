@@ -2,7 +2,8 @@
    Loads local JSON and renders Tabelle, Spiele and Torschützen.
    No framework, no build step. */
 
-const DATA = { config: null, standings: null, matches: null, scorers: null, players: null };
+const DATA = { config: null, standings: null, matches: null, scorers: null,
+               players: null, lineups: null };
 
 // A friendly note for anyone poking around in the sources.
 console.log(
@@ -403,21 +404,43 @@ function showTeamGames(team) {
 /* ---------- init ---------- */
 
 async function loadAndRender() {
-  const [config, standings, matches, scorers, players] = await Promise.all([
+  const [config, standings, matches, scorers, players, lineups] = await Promise.all([
     loadJSON("data/config.enc.json"),
     loadJSON("data/standings.enc.json"),
     loadJSON("data/matches.enc.json"),
     loadJSON("data/scorers.enc.json"),
     loadJSON("data/players.enc.json").catch(() => ({ players: [] })),
+    // Written from the Einstellungen tab; absent until an admin saves the first one.
+    loadJSON("data/lineups.enc.json").catch(() => ({ byMatch: {} })),
   ]);
   DATA.config = config;
   DATA.standings = standings;
   DATA.matches = matches;
   DATA.scorers = scorers && scorers.byMatch ? scorers : { byMatch: {} };
   DATA.players = { players: (players && players.players) || [] };
+  DATA.lineups = lineups && lineups.byMatch ? lineups : { byMatch: {} };
 
   renderAll();
   updateLastChecked();
+}
+
+// Our own line-up, typed in the Einstellungen tab. The coach files it with the
+// association anyway, so this is the same data by a shorter route — and unlike the
+// scraped detail it is ours to keep. It slots into m.detail.lineups next to any
+// opponent line-up, replacing our entry there if both exist.
+function mergeLineups() {
+  const byMatch = (DATA.lineups && DATA.lineups.byMatch) || {};
+  const our = (DATA.config && DATA.config.ourTeam) || "";
+  ((DATA.matches && DATA.matches.matches) || []).forEach(m => {
+    const own = byMatch[m.id];
+    if (!own || !(own.starting || own.subs)) return;
+    const mine = { team: our, starting: own.starting || [], subs: own.subs || [],
+                   coaches: own.coaches || [] };
+    const detail = m.detail || (m.detail = {});
+    const rest = (detail.lineups || []).filter(l => l && l.team !== our);
+    // Home team first, the way a game report reads.
+    detail.lineups = m.home === our ? [mine, ...rest] : [...rest, mine];
+  });
 }
 
 // Hand-entered scorers live in their own file so an hourly scrape can never wipe
@@ -431,6 +454,7 @@ function mergeScorers() {
 
 function renderAll() {
   mergeScorers();
+  mergeLineups();
   renderHeader();
   populateSelect("team-filter");
   renderStandings();
@@ -501,6 +525,7 @@ const App = {
   stop() {
     ADMIN.unmount();
     DATA.config = DATA.standings = DATA.matches = DATA.scorers = null;
+    DATA.players = DATA.lineups = null;
     lastLoad = 0;
     document.querySelector("#standings-table tbody").innerHTML = "";
     ["match-list", "scorer-list", "team-filter",

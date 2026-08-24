@@ -324,6 +324,30 @@ table.standings { width: 100%; border-collapse: collapse; background: var(--card
   .user-row .user-name { grid-column: 1 / -1; }
 }
 .sc-row.player-row { grid-template-columns: 1fr auto; }
+
+/* Aufstellung: Nr | Name | Position | Rolle | × — stacked on a phone, where the
+   position and role dropdown have no room to share a line with the name. */
+.lu-row { display: grid; grid-template-columns: 58px 1fr 1fr auto auto; gap: 6px; align-items: center; }
+.lu-row input, .lu-row select {
+  font: inherit; font-size: .9rem; color: var(--ink); min-width: 0;
+  background: var(--card); border: 1px solid var(--line); border-radius: 9px; padding: 9px 10px;
+}
+.lu-row input:focus, .lu-row select:focus { outline: 2px solid var(--red); outline-offset: 1px; }
+.lu-row .lu-nr { text-align: center; }
+@media (max-width: 620px) {
+  .lu-row {
+    grid-template-columns: 58px 1fr auto;
+    grid-template-areas: "nr name name" "pos pos role" "del del del";
+    padding: 8px; border: 1px solid var(--line); border-radius: var(--radius);
+    background: var(--card);
+  }
+  .lu-row .lu-nr { grid-area: nr; }
+  .lu-row .lu-name { grid-area: name; }
+  .lu-row .lu-pos { grid-area: pos; }
+  .lu-row .lu-role { grid-area: role; }
+  .lu-row .sc-del { grid-area: del; width: 100%; }
+}
+.lineup-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
 /* `select.sc-team`, not `.sc-team` — the Torschützen list uses a <span> of the
    same name for its subtitle, and it must not turn into a form control.
    The <select> itself is now only used by the role picker in the user list. */

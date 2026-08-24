@@ -53,6 +53,17 @@ Das Namensfeld schlägt vor, wer im Matchcenter für dieses Spiel **aufgestellt*
 war — Startformation und eingesetzte Ersatzspieler, in der Schreibweise des
 Verbands. Für Spiele ohne Aufstellung greift die von Hand gepflegte Spielerliste.
 
+**Aufstellung erfassen** — dieselbe Aufstellung, die der Trainer ohnehin beim
+Verband meldet, für das gewählte Spiel eingetippt: Nummer, Name, Position und
+Rolle (Start / Start·C / Ersatz / Ersatz·kein Einsatz). Sie landet in
+`data/lineups.enc.json`, die der Scraper **nie** schreibt, und wird beim Anzeigen
+in den Spielbericht gemischt — neben eine fremde Aufstellung, falls es die je
+gibt. „Vom letzten Spiel übernehmen“ kopiert das Aufgebot des letzten erfassten
+Spiels; meist ändern sich nur ein, zwei Namen.
+
+Das ist der Weg, der ohne Freigabe des SFV funktioniert: Die Daten sind ohnehin
+unsere, sie machen nur einen Umweg weniger.
+
 **Benutzer verwalten** — anlegen, Passwort neu setzen, Rolle wechseln, löschen.
 Wächter: das eigene Konto lässt sich nicht löschen, und der letzte Admin lässt sich
 weder löschen noch herabsetzen.

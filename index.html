@@ -7,7 +7,7 @@
   <meta name="description" content="Tabelle, Spielplan, Resultate und Torschützen der Junioren D-9 schwarz des AC Rossoneri." />
   <meta name="robots" content="noindex, nofollow" />
   <link rel="icon" href="assets/logo.png" />
-  <link rel="stylesheet" href="assets/style.css?v=20260823b" />
+  <link rel="stylesheet" href="assets/style.css?v=20260824a" />
 </head>
 <body>
   <!--
@@ -123,6 +123,34 @@
       <button id="scorer-add" class="btn-secondary" type="button">+ Torschütze</button>
       <datalist id="roster-list"></datalist>
 
+      <h2>Aufstellung erfassen</h2>
+      <p class="hint">Für das oben gewählte Spiel. Dieselbe Aufstellung, die du beim
+        Verband meldest — hier eingetippt erscheint sie im Spielbericht, und das
+        Namensfeld bei den Torschützen schlägt sie vor.</p>
+
+      <div id="lineup-editor" class="scorer-editor"></div>
+      <div class="lineup-actions">
+        <button id="lineup-add" class="btn-secondary" type="button">+ Spieler</button>
+        <button id="lineup-copy" class="btn-secondary btn-slim" type="button">Vom letzten Spiel übernehmen</button>
+      </div>
+      <datalist id="position-list">
+        <option value="Tor"></option>
+        <option value="Verteidigung rechtsaussen"></option>
+        <option value="Innenverteidigung rechts"></option>
+        <option value="Innenverteidigung links"></option>
+        <option value="Verteidigung linksaussen"></option>
+        <option value="Libero"></option>
+        <option value="Mittelfeld"></option>
+        <option value="Mittelfeld rechtsaussen"></option>
+        <option value="Mittelfeld defensiv rechts"></option>
+        <option value="Mittelfeld defensiv links"></option>
+        <option value="Flügel rechts"></option>
+        <option value="Flügel links"></option>
+        <option value="Sturmspitze"></option>
+        <option value="Sturmspitze rechts"></option>
+        <option value="Sturmspitze links"></option>
+      </datalist>
+
       <h2>Unsere Spieler</h2>
       <p class="hint">Die Mannschaft von <span id="roster-team">unserem Team</span>.
         Bei Spielen mit Aufstellung schlägt die Seite oben ohnehin das Aufgebot vor;
@@ -181,8 +209,8 @@
   </footer>
   </div><!-- /#app -->
 
-  <script src="assets/auth.js?v=20260823b"></script>
-  <script src="assets/app.js?v=20260823b"></script>
-  <script src="assets/admin.js?v=20260823b"></script>
+  <script src="assets/auth.js?v=20260824a"></script>
+  <script src="assets/app.js?v=20260824a"></script>
+  <script src="assets/admin.js?v=20260824a"></script>
 </body>
 </html>

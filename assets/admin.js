@@ -14,6 +14,7 @@ const ADMIN = (() => {
   const REPO = "acrossoneri/d9schwarz";
   const FILE = "data/scorers.enc.json";
   const PLAYERS_FILE = "data/players.enc.json";
+  const LINEUP_FILE = "data/lineups.enc.json";
   const ADMIN_FILE = "data/admin.enc.json";
   const AUTH_FILE = "data/auth.json";
   const TOKEN_KEY = "acr.ghtoken";
@@ -22,12 +23,14 @@ const ADMIN = (() => {
   let mounted = false;
   let dirty = false;          // unsaved scorer edits
   let dirtyPlayers = false;   // unsaved roster edits
+  let dirtyLineup = false;    // unsaved line-up edits
   let selectedId = null;
 
   const el = id => document.getElementById(id);
   const allMatches = () => (DATA.matches && DATA.matches.matches) || [];
   const byMatch = () => (DATA.scorers && DATA.scorers.byMatch) || {};
   const ourTeam = () => (DATA.config && DATA.config.ourTeam) || "";
+  const byMatchLineup = () => (DATA.lineups && DATA.lineups.byMatch) || {};
 
   /* Torschützen werden von Hand erfasst, darum nur für unser eigenes Team: für
      fremde Paarungen liegen die Namen gar nicht vor. Deshalb stehen hier auch
@@ -186,7 +189,8 @@ const ADMIN = (() => {
       box.appendChild(hint(`Resultat ${m.homeScore}:${m.awayScore} — ${expected} eigene `
                           + `${expected === 1 ? "Tor" : "Tore"}, erfasst sind ${total}.`, "warn"));
     }
-    // The suggestions follow the selected game, so they refresh with the editor.
+    // Suggestions and the line-up both follow the selected game.
+    renderLineup();
     renderRosterOptions();
   }
 
@@ -222,6 +226,189 @@ const ADMIN = (() => {
     renderEditor();
     const last = el("scorer-editor").querySelector(".sc-row:last-of-type .sc-player");
     if (last) last.focus();
+  }
+
+  /* ---------- our line-up ---------- */
+
+  /* The coach files the Aufstellung with the association before every game, so we
+     already have it — typing it here is the short way round. Kept in its own file,
+     which the scraper never writes, and merged into the game detail on display. */
+
+  const ROLES = [
+    ["start", "Start"],
+    ["captain", "Start · C"],
+    ["sub", "Ersatz"],
+    ["unused", "Ersatz · kein Einsatz"],
+  ];
+
+  function lineupRows(m) {
+    const stored = byMatchLineup()[m.id];
+    if (!stored) return [];
+    return [...(stored.starting || []).map(p => ({ ...p, role: p.captain ? "captain" : "start" })),
+            ...(stored.subs || []).map(p => ({ ...p, role: p.unused ? "unused" : "sub" }))];
+  }
+
+  function makeLineupRow(m, player, index) {
+    const row = document.createElement("div");
+    row.className = "lu-row";
+    row.dataset.index = index;
+
+    const num = document.createElement("input");
+    num.type = "number";
+    num.className = "lu-nr";
+    num.min = "1";
+    num.max = "99";
+    num.placeholder = "Nr.";
+    num.value = player && player.number != null ? player.number : "";
+
+    const name = document.createElement("input");
+    name.type = "text";
+    name.className = "lu-name";
+    name.placeholder = "Name";
+    name.autocomplete = "off";
+    name.setAttribute("list", "roster-list");
+    name.value = (player && player.name) || "";
+
+    const pos = document.createElement("input");
+    pos.type = "text";
+    pos.className = "lu-pos";
+    pos.placeholder = "Position";
+    pos.autocomplete = "off";
+    pos.setAttribute("list", "position-list");
+    pos.value = (player && player.position) || "";
+
+    const role = document.createElement("select");
+    role.className = "lu-role";
+    ROLES.forEach(([v, label]) => {
+      const o = document.createElement("option");
+      o.value = v;
+      o.textContent = label;
+      role.appendChild(o);
+    });
+    role.value = (player && player.role) || "start";
+
+    const del = document.createElement("button");
+    del.type = "button";
+    del.className = "sc-del";
+    del.title = "Entfernen";
+    del.setAttribute("aria-label", "Spieler entfernen");
+    del.textContent = "×";
+    del.addEventListener("click", () => {
+      const list = commitLineup();
+      list.splice(index, 1);
+      storeLineup(m, list);
+      markLineupDirty();
+      renderLineup();
+    });
+
+    [num, name, pos, role].forEach(inp =>
+      inp.addEventListener("input", () => { storeLineup(m, commitLineup()); markLineupDirty(); }));
+
+    row.append(num, name, pos, role, del);
+    return row;
+  }
+
+  function renderLineup() {
+    const box = el("lineup-editor");
+    if (!box) return;
+    box.innerHTML = "";
+    const m = currentMatch();
+    if (!m) {
+      box.appendChild(hint("Kein Spiel ausgewählt."));
+      return;
+    }
+    const rows = lineupRows(m);
+    if (!rows.length) {
+      box.appendChild(hint("Noch keine Aufstellung für dieses Spiel."));
+    }
+    rows.forEach((p, i) => box.appendChild(makeLineupRow(m, p, i)));
+
+    const starting = rows.filter(p => p.role === "start" || p.role === "captain").length;
+    if (starting && starting !== 9) {
+      box.appendChild(hint(`${starting} in der Startformation — im D-9 sind es neun.`, "warn"));
+    }
+    if (rows.filter(p => p.role === "captain").length > 1) {
+      box.appendChild(hint("Mehr als ein Captain markiert.", "warn"));
+    }
+  }
+
+  // Read the rows back out of the DOM, in the order they appear.
+  function commitLineup() {
+    const box = el("lineup-editor");
+    if (!box) return [];
+    return [...box.querySelectorAll(".lu-row")].map(row => {
+      const p = { name: row.querySelector(".lu-name").value.trim(),
+                  role: row.querySelector(".lu-role").value };
+      const n = parseInt(row.querySelector(".lu-nr").value, 10);
+      if (Number.isFinite(n)) p.number = n;
+      const pos = row.querySelector(".lu-pos").value.trim();
+      if (pos) p.position = pos;
+      return p;
+    });
+  }
+
+  // Split the flat editor list back into the shape the display expects.
+  function storeLineup(m, rows) {
+    const shape = p => {
+      const out = { name: p.name };
+      if (p.number != null) out.number = p.number;
+      if (p.position) out.position = p.position;
+      if (p.role === "captain") out.captain = true;
+      if (p.role === "unused") out.unused = true;
+      return out;
+    };
+    byMatchLineup()[m.id] = {
+      starting: rows.filter(p => p.role === "start" || p.role === "captain").map(shape),
+      subs: rows.filter(p => p.role === "sub" || p.role === "unused").map(shape),
+    };
+  }
+
+  function addLineupRow() {
+    const m = currentMatch();
+    if (!m) return;
+    const rows = commitLineup();
+    const starting = rows.filter(p => p.role === "start" || p.role === "captain").length;
+    rows.push({ name: "", role: starting < 9 ? "start" : "sub" });
+    storeLineup(m, rows);
+    markLineupDirty();
+    renderLineup();
+    const last = el("lineup-editor").querySelector(".lu-row:last-of-type .lu-name");
+    if (last) last.focus();
+  }
+
+  // Carry last game's squad over — most of the names repeat week to week.
+  function copyPreviousLineup() {
+    const m = currentMatch();
+    if (!m) return;
+    const earlier = ourMatches().filter(x => (x.date || "") < (m.date || ""));
+    const source = earlier.find(x => (byMatchLineup()[x.id] || {}).starting);
+    if (!source) {
+      renderStatus("Kein früheres Spiel mit Aufstellung gefunden.", "err");
+      return;
+    }
+    byMatchLineup()[m.id] = JSON.parse(JSON.stringify(byMatchLineup()[source.id]));
+    markLineupDirty();
+    renderLineup();
+    renderStatus(`Aufstellung von ${matchLabel(source)} übernommen.`, "ok");
+  }
+
+  function markLineupDirty() {
+    dirtyLineup = true;
+    renderRosterOptions();
+    renderStatus();
+  }
+
+  async function lineupFileText() {
+    const out = {};
+    Object.entries(byMatchLineup()).forEach(([id, l]) => {
+      const clean = list => (list || []).filter(p => p && p.name && p.name.trim())
+                                        .map(p => ({ ...p, name: p.name.trim() }));
+      const starting = clean(l && l.starting);
+      const subs = clean(l && l.subs);
+      if (starting.length || subs.length) out[id] = { starting, subs };
+    });
+    const env = await AUTH.encryptEnvelope({ byMatch: out }, stamp());
+    return JSON.stringify(env, null, 2) + "\n";
   }
 
   /* ---------- our players ---------- */
@@ -292,7 +479,12 @@ const ADMIN = (() => {
     const dl = el("roster-list");
     if (!dl) return;
     dl.innerHTML = "";
-    const squad = matchSquad(currentMatch());
+    const m = currentMatch();
+    const own = (m && byMatchLineup()[m.id]) || null;
+    const typed = own ? [...(own.starting || []), ...(own.subs || [])]
+                          .map(p => (p.name || "").trim()).filter(Boolean)
+                      : [];
+    const squad = typed.length ? typed : matchSquad(m);
     const rest = roster().map(p => (p || "").trim()).filter(Boolean)
                          .sort((a, b) => a.localeCompare(b));
     const seen = new Set();
@@ -342,14 +534,15 @@ const ADMIN = (() => {
   function renderStatus(message, kind) {
     const s = el("publish-state");
     if (s) {
-      const what = [dirty ? "Torschützen" : "", dirtyPlayers ? "Spieler" : ""].filter(Boolean);
+      const what = [dirty ? "Torschützen" : "", dirtyLineup ? "Aufstellung" : "",
+                    dirtyPlayers ? "Spieler" : ""].filter(Boolean);
       s.className = "publish-state" + (kind ? " " + kind : "");
       s.textContent = message
         || (what.length ? `Ungespeicherte Änderungen (${what.join(" und ")}).`
                         : "Alles gespeichert.");
     }
     const btn = el("publish-btn");
-    if (btn) btn.disabled = busy || !(dirty || dirtyPlayers);
+    if (btn) btn.disabled = busy || !(dirty || dirtyLineup || dirtyPlayers);
     renderTokenState();
   }
 
@@ -468,6 +661,8 @@ const ADMIN = (() => {
       // Only touch what actually changed, so each publish is one small commit.
       const jobs = [];
       if (dirty) jobs.push([FILE, await fileText(), "data: Torschützen manuell erfasst"]);
+      if (dirtyLineup) jobs.push([LINEUP_FILE, await lineupFileText(),
+                                  "data: Aufstellung erfasst"]);
       if (dirtyPlayers) jobs.push([PLAYERS_FILE, await playersFileText(),
                                    "data: Spielerliste aktualisiert"]);
       if (!jobs.length) { busy = false; renderStatus(); return; }
@@ -481,10 +676,13 @@ const ADMIN = (() => {
       for (const [path, text, message] of jobs) {
         const err = await commitFile(path, text, message);
         if (err) { busy = false; renderStatus(err, "err"); return; }
-        if (path === FILE) dirty = false; else dirtyPlayers = false;
+        if (path === FILE) dirty = false;
+        else if (path === LINEUP_FILE) dirtyLineup = false;
+        else dirtyPlayers = false;
       }
       busy = false;
       renderMatchPicker();
+      renderLineup();
       renderPlayers();
       renderStatus("Veröffentlicht. " + LIVE_SOON, "ok");
     } catch (err) {
@@ -625,6 +823,8 @@ const ADMIN = (() => {
       renderEditor();
     });
     el("scorer-add").addEventListener("click", addRow);
+    el("lineup-add").addEventListener("click", addLineupRow);
+    el("lineup-copy").addEventListener("click", copyPreviousLineup);
     el("player-add").addEventListener("click", addPlayer);
     el("publish-btn").addEventListener("click", publish);
     el("user-add").addEventListener("click", addUser);
@@ -675,15 +875,16 @@ const ADMIN = (() => {
 
     // A half-typed scorer is easy to lose on a phone; warn before leaving.
     window.addEventListener("beforeunload", (e) => {
-      if (dirty || dirtyPlayers) { e.preventDefault(); e.returnValue = ""; }
+      if (dirty || dirtyLineup || dirtyPlayers) { e.preventDefault(); e.returnValue = ""; }
     });
   }
 
   function unmount() {
     dirty = false;
+    dirtyLineup = false;
     dirtyPlayers = false;
     selectedId = null;
-    ["player-editor", "roster-list"].forEach(id => {
+    ["player-editor", "roster-list", "lineup-editor"].forEach(id => {
       const box = el(id);
       if (box) box.innerHTML = "";
     });
@@ -717,7 +918,7 @@ const ADMIN = (() => {
 
   return {
     mount, unmount, render,
-    isDirty: () => dirty || dirtyPlayers,
-    discard: () => { dirty = dirtyPlayers = false; },
+    isDirty: () => dirty || dirtyLineup || dirtyPlayers,
+    discard: () => { dirty = dirtyLineup = dirtyPlayers = false; },
   };
 })();
