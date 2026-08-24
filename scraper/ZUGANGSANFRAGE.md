@@ -2,34 +2,42 @@
 
 Die Spieldetailseiten des Matchcenters antworten auf maschinelle Abfragen mit
 HTTP 403 („Ein maschineller Zugriff ist nicht erlaubt und wurde unterbunden …
-Block Bot Score 1 (fvnws.ch)“) und nennen support@football.ch als Anlaufstelle
-für SFV-Vereine. Dafür ist dieser Entwurf.
+Block Bot Score 1 (fvnws.ch)“). Die Sperrmeldung nennt zwei Adressen:
+support@football.ch für SFV-Vereine, clubservices@football.ch für alle anderen.
 
-Vor dem Absenden: Funktion, Telefon und Absenderadresse ergänzen.
+Dies hier ist ein privates Projekt eines Trainers, kein Vereinsprojekt — der
+Entwurf sagt das auch so und geht darum an **clubservices@football.ch**. Wer
+lieber den Vereinsweg möchte, klärt es zuerst im Verein ab; dann geht dieselbe
+Anfrage über den Verein an support@football.ch und wirkt deutlich stärker.
+
+Vor dem Absenden: Telefon und Absenderadresse ergänzen.
 
 ---
 
-**An:** support@football.ch
-**Betreff:** Zugang zu Spielbetriebsdaten – AC Rossoneri, Junioren D-9 schwarz
+**An:** clubservices@football.ch
+**Betreff:** Anfrage zu Spielbetriebsdaten – private Teamseite, Junioren D-9
 
 Guten Tag
 
-Ich betreue beim AC Rossoneri die Junioren D-9 schwarz (FVNWS, Stärkeklasse 2,
-Gruppe 3). Für die Familien des Teams betreiben wir eine passwortgeschützte,
-nicht kommerzielle Teamseite mit Tabelle, Spielplan und Resultaten unserer
-Gruppe.
+Ich bin Trainer der Junioren D-9 schwarz des AC Rossoneri (FVNWS, Stärkeklasse 2,
+Gruppe 3) und frage privat an, nicht im Namen des Vereins.
 
-Die Spieldetailseiten – Spielort, Drittelsresultate, Aufstellung – antworten uns
-mit HTTP 403 und dem Hinweis, maschineller Zugriff sei nicht erlaubt. Wir haben
-die Sperre nicht umgangen, sondern wenden uns an Sie.
+Für die Familien meines Teams habe ich eine kleine, passwortgeschützte Seite
+gebaut, die Tabelle, Spielplan und Resultate unserer Gruppe zusammenfasst. Sie
+ist nicht öffentlich, nicht kommerziell und richtet sich an rund ein Dutzend
+Familien.
 
-Gibt es für Vereine einen vorgesehenen Weg zu diesen Daten – Schnittstelle,
-Export oder Freigabe? Und ist die stündliche Abfrage der Spielplanseite, die wir
-heute nutzen, für Sie in Ordnung? Wir richten uns nach Ihrer Auskunft. Bei den
-Aufstellungen geht es um Namen von Kindern; die zeigen wir nur hinter dem Login.
+Die Spieldetailseiten – Spielort, Drittelsresultate, Aufstellung – antworten mir
+mit HTTP 403 und dem Hinweis, maschineller Zugriff sei nicht erlaubt. Ich habe
+die Sperre nicht umgangen, sondern frage bei Ihnen nach.
+
+Gibt es für einen solchen privaten Zweck einen gangbaren Weg zu diesen Daten?
+Und ist die stündliche Abfrage der Spielplanseite, die ich heute nutze, für Sie
+in Ordnung — oder soll ich sie anpassen oder einstellen? Ich richte mich nach
+Ihrer Auskunft.
 
 Freundliche Grüsse
 
 Simon Pflugshaupt
-Junioren D-9 schwarz, AC Rossoneri
-[Funktion] · [Telefon] · [E-Mail]
+Trainer Junioren D-9 schwarz, AC Rossoneri
+[Telefon] · [E-Mail]
