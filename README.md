@@ -71,6 +71,13 @@ Browser, die Seite parst nur den Text — es geht keine Abfrage von uns aus. Die
 Markierung „kein Einsatz“ ist ein Bildchen und lässt sich nicht mitkopieren, die
 bleibt von Hand.
 
+**Unsere Spieler** — Nummer und Name. Ein Eintrag war früher ein blosser Name,
+jetzt ist er `{name, number}`; alte Dateien voller Strings laden weiter. Wer in
+einer erfassten Aufstellung auftaucht, wird darunter zur Übernahme vorgeschlagen
+— samt Nummer aus dem jüngsten Spiel, in dem er gespielt hat. Einzeln anklicken
+oder alle auf einmal. Automatisch aufgenommen wird niemand: ein vertippter Name
+in einer Aufstellung soll nicht stillschweigend zum Kaderspieler werden.
+
 **Nicht verlieren** — Änderungen liegen bis zum Veröffentlichen nur im Browser.
 Damit ein Reload, ein geschlossener Tab oder ein fehlgeschlagenes Veröffentlichen
 sie nicht verschluckt, werden sie bei jeder Eingabe zusätzlich im `localStorage`

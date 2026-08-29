@@ -323,7 +323,19 @@ table.standings { width: 100%; border-collapse: collapse; background: var(--card
   /* the name gets its own line; role/password/delete sit underneath */
   .user-row .user-name { grid-column: 1 / -1; }
 }
-.sc-row.player-row { grid-template-columns: 1fr auto; }
+.sc-row.player-row { grid-template-columns: 58px 1fr auto; }
+.sc-row.player-row .pl-nr { text-align: center; }
+
+/* Players picked up from the line-ups, offered one click at a time. */
+.squad-suggest { margin: 10px 0 14px; }
+.squad-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 8px; }
+.squad-chip {
+  appearance: none; cursor: pointer; font: inherit; font-size: .8rem;
+  background: var(--card); color: var(--ink);
+  border: 1px dashed var(--line); border-radius: 999px; padding: 4px 11px;
+}
+.squad-chip::before { content: "+ "; color: var(--muted); }
+.squad-chip:hover { border-color: var(--red); border-style: solid; color: var(--red); }
 
 /* Aufstellung: Nr | Name | Position | Rolle | × — stacked on a phone, where the
    position and role dropdown have no room to share a line with the name. */

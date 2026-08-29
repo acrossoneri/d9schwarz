@@ -548,13 +548,52 @@ const ADMIN = (() => {
 
   const roster = () => (DATA.players && DATA.players.players) || [];
 
+  /* A roster entry used to be a bare name. It is now {name, number}, and old files
+     full of strings still load — normalise on the way in, write objects on the way
+     out. The number is what the Verband has on the shirt, so it is worth keeping. */
+  const normPlayer = p => (typeof p === "string" ? { name: p.trim() }
+                                                 : { name: ((p && p.name) || "").trim(),
+                                                     ...(p && Number.isFinite(p.number)
+                                                         ? { number: p.number } : {}) });
+  const rosterNorm = () => roster().map(normPlayer).filter(p => p.name);
+
+  /* Everyone who has appeared in one of our stored line-ups, with the shirt number
+     from the most recent game they played. The coach types a line-up per match
+     anyway; the squad list falls out of it for free. */
+  function squadFromLineups() {
+    const byMatch = (DATA.lineups && DATA.lineups.byMatch) || {};
+    const dates = {};
+    ourMatches().forEach(m => { dates[m.id] = m.date || ""; });
+    const seen = new Map();
+    Object.entries(byMatch).forEach(([id, l]) => {
+      [...((l && l.starting) || []), ...((l && l.subs) || [])].forEach(p => {
+        const name = ((p && p.name) || "").trim();
+        if (!name) return;
+        const when = dates[id] || "";
+        const prev = seen.get(name);
+        if (!prev || when >= prev.when) {
+          seen.set(name, { name, when, ...(Number.isFinite(p.number) ? { number: p.number } : {}) });
+        }
+      });
+    });
+    return [...seen.values()]
+      .map(({ name, number }) => (number != null ? { name, number } : { name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  // Those not already in the hand-kept list.
+  function squadNotInRoster() {
+    const have = new Set(rosterNorm().map(p => p.name.toLowerCase()));
+    return squadFromLineups().filter(p => !have.has(p.name.toLowerCase()));
+  }
+
   function renderPlayers() {
     const box = el("player-editor");
     if (!box) return;
     const label = el("roster-team");
     if (label) label.textContent = (DATA.config && DATA.config.ourTeam) || "unserem Team";
     box.innerHTML = "";
-    const list = roster();
+    const list = rosterNorm();
     if (!list.length) {
       box.appendChild(hint("Noch keine Spieler erfasst. Sie erscheinen dann beim "
                          + "Erfassen der Torschützen als Vorschlag."));
@@ -563,19 +602,29 @@ const ADMIN = (() => {
       const row = document.createElement("div");
       row.className = "sc-row player-row";
 
+      const num = document.createElement("input");
+      num.type = "number";
+      num.className = "lu-nr pl-nr";
+      num.min = "1";
+      num.max = "99";
+      num.placeholder = "Nr.";
+      num.value = player.number != null ? player.number : "";
+
       const name = document.createElement("input");
       name.type = "text";
       name.className = "sc-player";
       name.placeholder = "Name";
       name.autocomplete = "off";
-      name.value = player || "";
-      name.addEventListener("input", () => { commitPlayers(); markPlayersDirty(); });
+      name.value = player.name || "";
+
+      [num, name].forEach(inp =>
+        inp.addEventListener("input", () => { commitPlayers(); markPlayersDirty(); }));
 
       const del = document.createElement("button");
       del.type = "button";
       del.className = "sc-del";
       del.title = "Entfernen";
-      del.setAttribute("aria-label", `${player || "Spieler"} entfernen`);
+      del.setAttribute("aria-label", `${player.name || "Spieler"} entfernen`);
       del.textContent = "×";
       del.addEventListener("click", () => {
         commitPlayers();
@@ -584,10 +633,60 @@ const ADMIN = (() => {
         renderPlayers();
       });
 
-      row.append(name, del);
+      row.append(num, name, del);
       box.appendChild(row);
     });
+
+    renderSquadSuggestions();
     renderRosterOptions();
+  }
+
+  /* Everyone from the line-ups who is not on the list yet, offered for one click.
+     Nothing is added behind the coach's back — a wrong name typed into a line-up
+     should not quietly become a permanent squad member. */
+  function renderSquadSuggestions() {
+    const box = el("squad-suggest");
+    if (!box) return;
+    box.innerHTML = "";
+    const missing = squadNotInRoster();
+    if (!missing.length) return;
+
+    const p = document.createElement("p");
+    p.className = "hint";
+    p.textContent = missing.length === 1
+      ? "Aus den Aufstellungen erkannt, noch nicht in der Liste:"
+      : `${missing.length} Spieler aus den Aufstellungen erkannt, noch nicht in der Liste:`;
+    box.appendChild(p);
+
+    const chips = document.createElement("div");
+    chips.className = "squad-chips";
+    missing.forEach(player => {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "squad-chip";
+      chip.textContent = (player.number != null ? player.number + " " : "") + player.name;
+      chip.title = `${player.name} übernehmen`;
+      chip.addEventListener("click", () => {
+        commitPlayers();
+        roster().push(player);
+        markPlayersDirty();
+        renderPlayers();
+      });
+      chips.appendChild(chip);
+    });
+    box.appendChild(chips);
+
+    const all = document.createElement("button");
+    all.type = "button";
+    all.className = "btn-secondary btn-slim";
+    all.textContent = `Alle ${missing.length} übernehmen`;
+    all.addEventListener("click", () => {
+      commitPlayers();
+      squadNotInRoster().forEach(player => roster().push(player));
+      markPlayersDirty();
+      renderPlayers();
+    });
+    box.appendChild(all);
   }
 
   // Everyone the matchcenter listed in OUR line-up for a game — the match-day
@@ -618,8 +717,9 @@ const ADMIN = (() => {
                           .map(p => (p.name || "").trim()).filter(Boolean)
                       : [];
     const squad = typed.length ? typed : matchSquad(m);
-    const rest = roster().map(p => (p || "").trim()).filter(Boolean)
-                         .sort((a, b) => a.localeCompare(b));
+    const rest = [...rosterNorm().map(p => p.name),
+                  ...squadFromLineups().map(p => p.name)]
+                   .sort((a, b) => a.localeCompare(b));
     const seen = new Set();
     [...squad, ...rest].forEach(name => {
       if (seen.has(name)) return;
@@ -633,13 +733,17 @@ const ADMIN = (() => {
   function commitPlayers() {
     const box = el("player-editor");
     if (!box) return;
-    DATA.players.players = [...box.querySelectorAll(".player-row .sc-player")]
-      .map(i => i.value);
+    DATA.players.players = [...box.querySelectorAll(".player-row")].map(row => {
+      const player = { name: row.querySelector(".sc-player").value.trim() };
+      const n = parseInt(row.querySelector(".pl-nr").value, 10);
+      if (Number.isFinite(n)) player.number = n;
+      return player;
+    });
   }
 
   function addPlayer() {
     commitPlayers();
-    roster().push("");
+    roster().push({ name: "" });
     markPlayersDirty();
     renderPlayers();
     const last = el("player-editor").querySelector(".player-row:last-of-type .sc-player");
@@ -730,9 +834,10 @@ const ADMIN = (() => {
 
   async function playersFileText() {
     commitPlayers();
-    // Trimmed, de-duplicated and sorted, so the file stays tidy and stable.
-    const clean = [...new Set(roster().map(p => (p || "").trim()).filter(Boolean))]
-      .sort((a, b) => a.localeCompare(b));
+    // De-duplicated by name and sorted, so the file stays tidy and stable.
+    const byName = new Map();
+    rosterNorm().forEach(p => byName.set(p.name.toLowerCase(), p));
+    const clean = [...byName.values()].sort((a, b) => a.name.localeCompare(b.name));
     const env = await AUTH.encryptEnvelope({ players: clean }, stamp());
     return JSON.stringify(env, null, 2) + "\n";
   }
