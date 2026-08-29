@@ -348,6 +348,17 @@ table.standings { width: 100%; border-collapse: collapse; background: var(--card
   .lu-row .sc-del { grid-area: del; width: 100%; }
 }
 .lineup-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+.paste-box { margin-bottom: 14px; }
+.paste-box summary {
+  cursor: pointer; font-size: .84rem; font-weight: 600; color: var(--muted); padding: 4px 0;
+}
+.paste-box summary:hover { color: var(--red); }
+.paste-box textarea {
+  width: 100%; font: inherit; font-size: .84rem; color: var(--ink);
+  background: var(--card); border: 1px solid var(--line); border-radius: 9px;
+  padding: 9px 10px; margin-bottom: 8px; resize: vertical;
+}
+.paste-box textarea:focus { outline: 2px solid var(--red); outline-offset: 1px; }
 /* `select.sc-team`, not `.sc-team` — the Torschützen list uses a <span> of the
    same name for its subtitle, and it must not turn into a form control.
    The <select> itself is now only used by the role picker in the user list. */

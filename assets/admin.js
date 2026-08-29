@@ -409,6 +409,92 @@ const ADMIN = (() => {
     };
   }
 
+  /* Paste from the matchcenter. The page is one a person can open in their browser;
+     this only reads what they copied out of it — no request is made from here.
+
+     Its Aufstellung block starts with the pitch graphic (number + surname, no
+     position) and only then gives the real list (number + full name + position),
+     split by "Ersatzspieler/in" and "Trainer/in" headings. We skip the graphic by
+     starting at the first entry that carries a position. The "kein Einsatz" star is
+     an image and does not survive a copy, so that flag stays manual. */
+
+  const NUM_ONLY = /^\d{1,2}$/;
+  const IS_SUBS = /ersatz/i;
+  const IS_COACH = /trainer/i;
+  const SKIP_LINE = /^=|^kein einsatz$/i;
+  const CAPTAIN_ONLY = /^\(?C\)?$/i;          // the badge, copied out on its own line
+  const CAPTAIN_SUFFIX = /\(C\)\s*$/;         // or appended to the name
+
+  function parsePastedLineup(text) {
+    const lines = String(text || "").split(/\r?\n|\t/)
+      .map(l => l.trim()).filter(Boolean);
+    const others = new Set(allMatches().flatMap(m => [m.home, m.away])
+                                       .filter(t => t && t !== ourTeam()));
+
+    // Pass 1: sequence of entries and headings, in document order.
+    const seq = [];
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (SKIP_LINE.test(line)) continue;
+      if (IS_SUBS.test(line) || IS_COACH.test(line)) {
+        seq.push({ heading: IS_COACH.test(line) ? "coach" : "sub" });
+        continue;
+      }
+      if (others.has(line)) { seq.push({ heading: "otherTeam" }); continue; }
+      if (!NUM_ONLY.test(line)) continue;
+      const name = lines[i + 1];
+      if (!name || NUM_ONLY.test(name)) continue;
+      // The captain badge copies out as a "(C)" line of its own, between the name
+      // and the position — consume it before looking for the position.
+      let j = i + 2;
+      let captain = CAPTAIN_SUFFIX.test(name);
+      if (lines[j] && CAPTAIN_ONLY.test(lines[j])) { captain = true; j += 1; }
+      const after = lines[j];
+      const isPosition = after && !NUM_ONLY.test(after) && !SKIP_LINE.test(after)
+                         && !IS_SUBS.test(after) && !IS_COACH.test(after)
+                         && !CAPTAIN_ONLY.test(after) && !others.has(after);
+      seq.push({ number: parseInt(line, 10), name, captain,
+                 position: isPosition ? after : null });
+      i = isPosition ? j : j - 1;
+    }
+
+    // Pass 2: the real list starts at the first entry with a position.
+    const from = seq.findIndex(e => e.name && e.position);
+    if (from < 0) return [];
+
+    const rows = [];
+    let role = "start";
+    for (const e of seq.slice(from)) {
+      if (e.heading === "coach" || e.heading === "otherTeam") break;
+      if (e.heading === "sub") { role = "sub"; continue; }
+      if (!e.name) continue;
+      const row = { name: e.name.replace(CAPTAIN_SUFFIX, "").trim(),
+                    role: e.captain && role === "start" ? "captain" : role };
+      if (Number.isFinite(e.number)) row.number = e.number;
+      if (e.position) row.position = e.position;
+      rows.push(row);
+    }
+    return rows;
+  }
+
+  function importPastedLineup() {
+    const m = currentMatch();
+    const area = el("lineup-paste");
+    if (!m || !area) return;
+    const rows = parsePastedLineup(area.value);
+    if (!rows.length) {
+      renderStatus("Nichts erkannt — bitte den Aufstellungs-Block der Seite kopieren.", "err");
+      return;
+    }
+    storeLineup(m, rows);
+    markLineupDirty();
+    renderLineup();
+    area.value = "";
+    const starting = rows.filter(r => r.role !== "sub").length;
+    renderStatus(`${rows.length} Spieler übernommen (${starting} Start). `
+               + `„Kein Einsatz“ bitte von Hand setzen, dann veröffentlichen.`, "ok");
+  }
+
   function addLineupRow() {
     const m = currentMatch();
     if (!m) return;
@@ -890,6 +976,7 @@ const ADMIN = (() => {
     on("scorer-add", "click", addRow);
     on("lineup-add", "click", addLineupRow);
     on("lineup-copy", "click", copyPreviousLineup);
+    on("lineup-import", "click", importPastedLineup);
     on("player-add", "click", addPlayer);
     on("publish-btn", "click", publish);
     on("user-add", "click", addUser);

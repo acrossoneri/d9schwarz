@@ -64,6 +64,13 @@ Spiels; meist ändern sich nur ein, zwei Namen.
 Das ist der Weg, der ohne Freigabe des SFV funktioniert: Die Daten sind ohnehin
 unsere, sie machen nur einen Umweg weniger.
 
+**Aus dem Matchcenter einfügen** — wer die Spielseite im Browser offen hat, kann
+den Block „Aufstellung“ markieren, kopieren und hier einfügen; Nummer, Name,
+Position und Captain werden übernommen. Das Kopieren macht der Mensch im eigenen
+Browser, die Seite parst nur den Text — es geht keine Abfrage von uns aus. Die
+Markierung „kein Einsatz“ ist ein Bildchen und lässt sich nicht mitkopieren, die
+bleibt von Hand.
+
 **Nicht verlieren** — Änderungen liegen bis zum Veröffentlichen nur im Browser.
 Damit ein Reload, ein geschlossener Tab oder ein fehlgeschlagenes Veröffentlichen
 sie nicht verschluckt, werden sie bei jeder Eingabe zusätzlich im `localStorage`
