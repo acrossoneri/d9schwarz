@@ -469,10 +469,10 @@ let lastLoad = 0;
 async function refresh(force = false) {
   if (refreshing || !AUTH.isUnlocked()) return;
   if (!force && Date.now() - lastLoad < 60000) return;
-  // Never let a reload silently throw away an admin's unsaved scorer edits.
+  // Never let a reload silently throw away an admin's unsaved edits.
   if (ADMIN.isDirty()) {
     if (!force) return;
-    if (!confirm("Es gibt ungespeicherte Torschützen. Neu laden und verwerfen?")) return;
+    if (!confirm("Es gibt ungespeicherte Änderungen. Neu laden und endgültig verwerfen?")) return;
     ADMIN.discard();
   }
   refreshing = true;

@@ -2,7 +2,7 @@
 
 Team-Website der **Junioren D-9 schwarz** (AC Rossoneri): Tabelle, Spielplan/Resultate
 und Torschützen. Die Daten werden stündlich automatisch aus dem FVNWS-Matchcenter
-geladen (GitHub Actions + Playwright).
+geladen (GitHub Actions + Playwright, alle zwei Stunden).
 
 **Live:** https://acrossoneri.github.io/d9schwarz/ — Zugang nur mit Login.
 
@@ -63,6 +63,14 @@ Spiels; meist ändern sich nur ein, zwei Namen.
 
 Das ist der Weg, der ohne Freigabe des SFV funktioniert: Die Daten sind ohnehin
 unsere, sie machen nur einen Umweg weniger.
+
+**Nicht verlieren** — Änderungen liegen bis zum Veröffentlichen nur im Browser.
+Damit ein Reload, ein geschlossener Tab oder ein fehlgeschlagenes Veröffentlichen
+sie nicht verschluckt, werden sie bei jeder Eingabe zusätzlich im `localStorage`
+gespiegelt (`acr.draft`) und beim nächsten Öffnen des Tabs wiederhergestellt —
+mit Hinweis in der Statuszeile. Erst ein erfolgreiches Veröffentlichen räumt sie
+weg, ebenso ein bewusstes Verwerfen beim Neuladen. Der Entwurf bleibt auf dem
+Gerät und wird nie hochgeladen.
 
 **Benutzer verwalten** — anlegen, Passwort neu setzen, Rolle wechseln, löschen.
 Wächter: das eigene Konto lässt sich nicht löschen, und der letzte Admin lässt sich

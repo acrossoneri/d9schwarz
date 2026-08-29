@@ -371,9 +371,11 @@ select.sc-team { max-width: 42vw; }
 .publish-state { font-size: .84rem; color: var(--muted); margin: 0 0 10px; }
 .publish-state.ok { color: #1c7a45; }
 .publish-state.err { color: #a3231a; }
+.publish-state.warn { color: #8a5a00; font-weight: 600; }
 @media (prefers-color-scheme: dark) {
   .publish-state.ok { color: #6bd39b; }
   .publish-state.err { color: #f3a19a; }
+  .publish-state.warn { color: #e9b949; }
 }
 
 .user-list { display: grid; gap: 8px; margin-bottom: 12px; }

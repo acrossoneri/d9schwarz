@@ -18,6 +18,7 @@ const ADMIN = (() => {
   const ADMIN_FILE = "data/admin.enc.json";
   const AUTH_FILE = "data/auth.json";
   const TOKEN_KEY = "acr.ghtoken";
+  const DRAFT_KEY = "acr.draft";
   const API = "https://api.github.com";
 
   let mounted = false;
@@ -38,6 +39,51 @@ const ADMIN = (() => {
   const ourMatches = () => allMatches()
     .filter(m => m.home === ourTeam() || m.away === ourTeam())
     .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+
+  /* ---------- unsaved work ---------- */
+
+  /* Edits live in memory until "Veröffentlichen" commits them, so a reload, a
+     closed tab or a failed publish used to lose them silently. They are mirrored
+     into localStorage on every keystroke and restored on mount; publishing clears
+     them. Per device, never uploaded — the encrypted files remain the record. */
+
+  function saveDraft() {
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({
+        at: Date.now(),
+        scorers: dirty ? byMatch() : null,
+        lineups: dirtyLineup ? byMatchLineup() : null,
+        players: dirtyPlayers ? roster() : null,
+      }));
+    } catch { /* private mode, quota — the editor still works, just unprotected */ }
+  }
+
+  function clearDraft() {
+    try { localStorage.removeItem(DRAFT_KEY); } catch { /* nothing to clear */ }
+  }
+
+  // Returns a note for the status line if anything was recovered.
+  function restoreDraft() {
+    let d;
+    try { d = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); } catch { return ""; }
+    if (!d) return "";
+    const what = [];
+    if (d.scorers && DATA.scorers) {
+      DATA.scorers.byMatch = d.scorers; dirty = true; what.push("Torschützen");
+    }
+    if (d.lineups && DATA.lineups) {
+      DATA.lineups.byMatch = d.lineups; dirtyLineup = true; what.push("Aufstellung");
+    }
+    if (d.players && DATA.players) {
+      DATA.players.players = d.players; dirtyPlayers = true; what.push("Spieler");
+    }
+    if (!what.length) return "";
+    mergeScorers();
+    mergeLineups();
+    const when = d.at ? new Date(d.at).toLocaleString("de-CH") : "";
+    return `Nicht veröffentlichte Änderungen wiederhergestellt (${what.join(", ")}`
+         + (when ? `, ${when}` : "") + "). Bitte veröffentlichen.";
+  }
 
   /* ---------- token ---------- */
 
@@ -394,6 +440,7 @@ const ADMIN = (() => {
 
   function markLineupDirty() {
     dirtyLineup = true;
+    saveDraft();
     renderRosterOptions();
     renderStatus();
   }
@@ -515,6 +562,7 @@ const ADMIN = (() => {
 
   function markPlayersDirty() {
     dirtyPlayers = true;
+    saveDraft();
     renderRosterOptions();
     renderStatus();
   }
@@ -523,6 +571,7 @@ const ADMIN = (() => {
 
   function markDirty() {
     dirty = true;
+    saveDraft();
     // Let the Spiele and Torschützen tabs show the edit right away.
     mergeScorers();
     renderMatches();
@@ -675,12 +724,18 @@ const ADMIN = (() => {
       }
       for (const [path, text, message] of jobs) {
         const err = await commitFile(path, text, message);
-        if (err) { busy = false; renderStatus(err, "err"); return; }
+        if (err) {
+          busy = false;
+          // The draft stays put, so nothing is lost while the cause is sorted out.
+          renderStatus(err + " — Änderungen bleiben auf diesem Gerät gespeichert.", "err");
+          return;
+        }
         if (path === FILE) dirty = false;
         else if (path === LINEUP_FILE) dirtyLineup = false;
         else dirtyPlayers = false;
       }
       busy = false;
+      clearDraft();
       renderMatchPicker();
       renderLineup();
       renderPlayers();
@@ -688,7 +743,8 @@ const ADMIN = (() => {
     } catch (err) {
       console.error(err);
       busy = false;
-      renderStatus("Veröffentlichen fehlgeschlagen. Details in der Konsole.", "err");
+      renderStatus("Veröffentlichen fehlgeschlagen — Änderungen bleiben auf diesem "
+                 + "Gerät gespeichert. Details in der Konsole.", "err");
     }
   }
 
@@ -814,24 +870,33 @@ const ADMIN = (() => {
 
   /* ---------- wiring ---------- */
 
+  // Bind if the element is there. A page served from cache can be one deploy behind
+  // this script; without the guard the first missing id threw and everything after
+  // it — including the publish button — silently stayed unwired.
+  function on(id, event, handler) {
+    const node = el(id);
+    if (node) node.addEventListener(event, handler);
+    else console.warn(`admin: #${id} fehlt — Seite neu laden (Strg+Umschalt+R).`);
+  }
+
   function mount() {
     if (mounted) return;
     mounted = true;
 
-    el("settings-match").addEventListener("change", (e) => {
+    on("settings-match", "change", (e) => {
       selectedId = e.target.value;
       renderEditor();
     });
-    el("scorer-add").addEventListener("click", addRow);
-    el("lineup-add").addEventListener("click", addLineupRow);
-    el("lineup-copy").addEventListener("click", copyPreviousLineup);
-    el("player-add").addEventListener("click", addPlayer);
-    el("publish-btn").addEventListener("click", publish);
-    el("user-add").addEventListener("click", addUser);
-    el("new-pass").addEventListener("keydown", (e) => {
+    on("scorer-add", "click", addRow);
+    on("lineup-add", "click", addLineupRow);
+    on("lineup-copy", "click", copyPreviousLineup);
+    on("player-add", "click", addPlayer);
+    on("publish-btn", "click", publish);
+    on("user-add", "click", addUser);
+    on("new-pass", "keydown", (e) => {
       if (e.key === "Enter") { e.preventDefault(); addUser(); }
     });
-    el("download-btn").addEventListener("click", async () => {
+    on("download-btn", "click", async () => {
       try {
         download(await fileText(), "scorers.enc.json");
         download(await playersFileText(), "players.enc.json");
@@ -902,10 +967,11 @@ const ADMIN = (() => {
 
   async function render() {
     if (!AUTH.isAdmin()) return;
+    const recovered = restoreDraft();
     renderMatchPicker();
     renderEditor();
     renderPlayers();
-    renderStatus();
+    renderStatus(recovered || undefined, recovered ? "warn" : undefined);
     renderUsers();
     await loadRepoToken();
     renderTokenState();
@@ -919,6 +985,7 @@ const ADMIN = (() => {
   return {
     mount, unmount, render,
     isDirty: () => dirty || dirtyLineup || dirtyPlayers,
-    discard: () => { dirty = dirtyLineup = dirtyPlayers = false; },
+    // An explicit discard is the one place the saved draft should go too.
+    discard: () => { dirty = dirtyLineup = dirtyPlayers = false; clearDraft(); },
   };
 })();

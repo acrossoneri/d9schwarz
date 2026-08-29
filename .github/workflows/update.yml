@@ -21,8 +21,12 @@ name: Update data
 # Times are UTC (Swiss local = UTC+1 winter / +2 summer).
 on:
   schedule:
-    - cron: "0 * * * *"          # hourly
-    - cron: "*/20 5-17 * * 6"    # Saturdays (match day) every 20 min, 05:00-17:59 UTC
+    # Every two hours. A game's result lands within two hours of the referee filing
+    # it, which is as fast as it gets — the matchcenter has nothing to give us in
+    # between, and an unchanged scrape produces no commit anyway. The old hourly
+    # beat plus a 20-minute Saturday burst meant ~60 runs a match day for maybe two
+    # changes.
+    - cron: "0 */2 * * *"
   workflow_dispatch:            # manual trigger from the Actions tab
 
 concurrency:
