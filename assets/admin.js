@@ -307,6 +307,88 @@ const ADMIN = (() => {
     byMatch()[m.id] = out;
   }
 
+  /* Quick entry for goal scorers: "Marlon, Dean, Dean 33, Dean" — names in the order
+     they scored, an optional minute after each. Names are resolved against the
+     match-day squad, so a first name or a typo still lands on the right player. */
+
+  function levenshtein(a, b) {
+    if (Math.abs(a.length - b.length) > 2) return 9;      // only near-misses matter
+    let prev = [...Array(b.length + 1).keys()];
+    for (let i = 1; i <= a.length; i++) {
+      const row = [i];
+      for (let j = 1; j <= b.length; j++) {
+        row[j] = Math.min(prev[j] + 1, row[j - 1] + 1,
+                          prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      }
+      prev = row;
+    }
+    return prev[b.length];
+  }
+
+  // Candidates for the selected game: who was actually on the pitch, then the squad.
+  function scorerCandidates(m) {
+    const names = [...matchSquad(m), ...rosterNorm().map(p => p.name)];
+    return [...new Set(names.filter(Boolean))];
+  }
+
+  function resolveScorerName(token, candidates) {
+    const t = token.toLowerCase();
+    const uniq = matches => (matches.length === 1 ? matches[0] : null);
+    const exact = candidates.filter(c => c.toLowerCase() === t);
+    if (exact.length) return exact[0];
+    // A first name, a surname, or any word of the full name.
+    const word = candidates.filter(c => c.toLowerCase().split(/\s+/).some(w => w === t));
+    if (word.length) return uniq(word) || null;
+    const starts = candidates.filter(c => c.toLowerCase().startsWith(t));
+    if (starts.length) return uniq(starts) || null;
+    const has = candidates.filter(c => c.toLowerCase().includes(t));
+    if (has.length) return uniq(has) || null;
+    // Last resort: a typo, one or two letters out from a single name part.
+    const near = candidates.filter(c =>
+      c.toLowerCase().split(/\s+/).some(w => levenshtein(w, t) <= 2));
+    return uniq(near) || null;
+  }
+
+  function parseScorerList(text, candidates) {
+    return String(text || "").split(/[,;\n]+/).map(part => part.trim()).filter(Boolean)
+      .map(part => {
+        const withMin = part.match(/^(.*?)[\s.']*(\d{1,3})\s*'?\.?$/);
+        const raw = (withMin ? withMin[1] : part).trim();
+        const minute = withMin ? parseInt(withMin[2], 10) : null;
+        const resolved = resolveScorerName(raw, candidates);
+        const entry = { player: resolved || raw, team: ourTeam() };
+        if (Number.isFinite(minute)) entry.minute = minute;
+        if (!resolved) entry.unresolved = raw;
+        return entry;
+      });
+  }
+
+  function importScorerList() {
+    const m = currentMatch();
+    const field = el("scorer-quick");
+    if (!m || !field) return;
+    const parsed = parseScorerList(field.value, scorerCandidates(m));
+    if (!parsed.length) {
+      renderStatus("Nichts erkannt — z. B. „Marlon, Dean, Dean 33“.", "err");
+      return;
+    }
+    const unresolved = parsed.filter(e => e.unresolved).map(e => e.unresolved);
+    byMatch()[m.id] = parsed.map(({ unresolved: _drop, ...keep }) => keep);
+    markDirty();
+    renderEditor();
+    field.value = "";
+    const goals = m.status === "played"
+      ? (m.home === ourTeam() ? m.homeScore : m.awayScore) : null;
+    const note = [`${parsed.length} Torschützen erfasst.`,
+                  goals != null && goals !== parsed.length
+                    ? `Achtung: ${goals} eigene Tore im Resultat.` : "",
+                  unresolved.length
+                    ? `Nicht zugeordnet: ${unresolved.join(", ")} — bitte prüfen.` : ""]
+                 .filter(Boolean).join(" ");
+    renderStatus(note, unresolved.length || (goals != null && goals !== parsed.length)
+                      ? "warn" : "ok");
+  }
+
   function addRow() {
     const m = currentMatch();
     if (!m) return;
@@ -1263,6 +1345,10 @@ const ADMIN = (() => {
       renderEditor();
     });
     on("scorer-add", "click", addRow);
+    on("scorer-quick-add", "click", importScorerList);
+    on("scorer-quick", "keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); importScorerList(); }
+    });
     on("lineup-add", "click", addLineupRow);
     on("lineup-copy", "click", copyPreviousLineup);
     on("lineup-import", "click", importPastedLineup);

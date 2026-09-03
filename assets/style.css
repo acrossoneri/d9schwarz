@@ -321,6 +321,14 @@ table.standings { width: 100%; border-collapse: collapse; background: var(--card
 .btn-secondary:hover { border-color: var(--red); }
 .btn-slim { padding: 7px 10px; font-size: .82rem; }
 
+.quick-row { display: flex; gap: 6px; align-items: center; margin-bottom: 4px; }
+.quick-row input {
+  flex: 1 1 auto; min-width: 0; font: inherit; font-size: .9rem; color: var(--ink);
+  background: var(--card); border: 1px solid var(--line); border-radius: 9px; padding: 9px 10px;
+}
+.quick-row input:focus { outline: 2px solid var(--red); outline-offset: 1px; }
+.quick-row .btn-slim { flex: 0 0 auto; }
+
 .scorer-editor { display: grid; gap: 8px; margin-bottom: 10px; }
 /* Name + Minute + Löschen — ohne Team-Auswahl passt die Zeile auch auf ein Handy. */
 .sc-row { display: grid; grid-template-columns: 1fr 62px auto; gap: 6px; align-items: center; }

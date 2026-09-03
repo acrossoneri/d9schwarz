@@ -7,7 +7,7 @@
   <meta name="description" content="Tabelle, Spielplan, Resultate und Torschützen der Junioren D-9 schwarz des AC Rossoneri." />
   <meta name="robots" content="noindex, nofollow" />
   <link rel="icon" href="assets/logo.png" />
-  <link rel="stylesheet" href="assets/style.css?v=20260903b" />
+  <link rel="stylesheet" href="assets/style.css?v=20260903c" />
 </head>
 <body>
   <!--
@@ -119,6 +119,15 @@
       <label class="field-label" for="settings-match">Spiel</label>
       <select id="settings-match" class="team-filter" aria-label="Spiel wählen"></select>
 
+      <div class="quick-row">
+        <input id="scorer-quick" type="text" autocomplete="off"
+               placeholder="z. B. Marlon, Dean, Dean 33, Dean" aria-label="Torschützen in Reihenfolge" />
+        <button id="scorer-quick-add" class="btn-secondary btn-slim" type="button">Erfassen</button>
+      </div>
+      <p class="hint">Namen in der Reihenfolge der Tore, mit Komma getrennt; eine Zahl
+        dahinter ist die Minute. Vorname genügt — zugeordnet wird über das Aufgebot
+        dieses Spiels. Ersetzt die bisherige Liste für dieses Spiel.</p>
+
       <div id="scorer-editor" class="scorer-editor"></div>
       <button id="scorer-add" class="btn-secondary" type="button">+ Torschütze</button>
       <datalist id="roster-list"></datalist>
@@ -229,8 +238,8 @@
   </footer>
   </div><!-- /#app -->
 
-  <script src="assets/auth.js?v=20260903b"></script>
-  <script src="assets/app.js?v=20260903b"></script>
-  <script src="assets/admin.js?v=20260903b"></script>
+  <script src="assets/auth.js?v=20260903c"></script>
+  <script src="assets/app.js?v=20260903c"></script>
+  <script src="assets/admin.js?v=20260903c"></script>
 </body>
 </html>

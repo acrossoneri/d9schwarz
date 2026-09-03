@@ -54,6 +54,12 @@ D-9 also für alle). Sie landen in `data/scorers.enc.json`, einer Datei, die der
 Scraper **nie** schreibt; ein Scrape kann handeingetragene Daten also nicht
 überschreiben. Erfasst wird nur das eigene Team.
 
+Schnellerfassung: Namen in der Reihenfolge der Tore ins Feld über der Liste,
+`Marlon, Dean, Dean 33, Dean` — Komma trennt, eine Zahl dahinter ist die Minute.
+Der Vorname genügt; zugeordnet wird gegen das Aufgebot dieses Spiels, Tippfehler
+bis zwei Buchstaben inklusive. Passt die Anzahl nicht zum Resultat, sagt die
+Statuszeile es.
+
 Das Namensfeld schlägt vor, wer im Matchcenter für dieses Spiel **aufgestellt**
 war — Startformation und eingesetzte Ersatzspieler, in der Schreibweise des
 Verbands. Für Spiele ohne Aufstellung greift die von Hand gepflegte Spielerliste.
@@ -66,8 +72,7 @@ in den Spielbericht gemischt — neben eine fremde Aufstellung, falls es die je
 gibt. „Vom letzten Spiel übernehmen“ kopiert das Aufgebot des letzten erfassten
 Spiels; meist ändern sich nur ein, zwei Namen.
 
-Das ist der Weg, der ohne Freigabe des SFV funktioniert: Die Daten sind ohnehin
-unsere, sie machen nur einen Umweg weniger.
+Die Daten sind ohnehin unsere — hier machen sie nur einen Umweg weniger.
 
 **Eigene Spiele** — Berichte zu Spielen, die nicht im Gruppen-Spielplan stehen
 (Trainingsspiele, Cup), legen sich beim Einlesen selbst als Spiel an: Datum,
@@ -162,7 +167,7 @@ Neben der Gruppen-Spielplanseite holt der Scraper zu jedem Spiel auch die
 
 | Feld | Inhalt |
 |------|--------|
-| `venue` | Spielort — beim Verband schon vor dem Anpfiff da, geholt wird er aber erst danach (siehe Zeitplan) |
+| `venue` | Spielort — schon vor dem Anpfiff da, geholt wird er aber erst danach (siehe Zeitplan) |
 | `periods` | Drittelsresultate, z. B. `0:1 / 3:3 / 6:6` |
 | `events` | Verlauf: Karten mit Minute (**Torschützen stehen dort im D-9 nicht** — die werden von Hand erfasst) |
 | `lineups` | Aufstellung **beider** Teams: Startformation mit Nummer und Position, Ersatzbank inkl. „kein Einsatz“, Captain, Trainer |
@@ -184,25 +189,3 @@ abgewiesen, kommt der Spielort eben mit der Abfrage nach dem Spiel.
 Was nicht geholt wird, behält das Detail des letzten Laufs — eine fehlgeschlagene
 oder ausgelassene Abfrage löscht nie etwas.
 
-### ⚠️ Der SFV blockiert maschinellen Zugriff
-
-Die Detailseiten antworten auf maschinelle Abfragen mit **HTTP 403** und im
-Klartext:
-
-> Ein maschineller Zugriff ist nicht erlaubt und wurde unterbunden […]
-> Block Bot Score 1 (fvnws.ch)
-
-Das ist keine Cloudflare-Prüfung, die man aussitzen kann, sondern ein Nein. Der
-Scraper erkennt diese Seite und bricht die Detailabfrage sofort ab — ein
-gesperrter Lauf kostet damit genau **eine** Anfrage, nicht neun.
-
-Der offizielle Weg steht in der Sperrmeldung selbst:
-
-| Wer | Kontakt |
-|-----|---------|
-| SFV-Verein (also wir) | support@football.ch |
-| Kein SFV-Verein | clubservices@football.ch |
-
-Solange das nicht bewilligt ist, laufen die Abfragen ins Leere und die Seite
-zeigt schlicht keine Details. Parser, Zwischenspeicher und Anzeige sind fertig
-und warten nur auf Daten.

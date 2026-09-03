@@ -38,11 +38,11 @@ BASE = HOST + "/default.aspx?oid=8&lng=1&v=508&t=63291&ls=26142&sg=71135"
 SPIELPLAN_URL = BASE + "&a=sp"       # whole group schedule (all teams)
 TZ = ZoneInfo("Europe/Zurich")       # the matchcenter prints Swiss local time
 
-# When a Spieldetail is worth asking for. Deliberately sparse: the pages belong to
-# the SFV, and a report nobody has written yet does not get written by asking more
-# often. Our games start looking 4h after kickoff and try again every couple of
-# hours until the Aufstellung is actually there; everyone else's are fetched once,
-# after their weekend is over and every report has been filed.
+# When a Spieldetail is worth asking for. Deliberately sparse: a report nobody has
+# written yet does not get written by asking more often. Our games start looking 4h
+# after kickoff and try again every couple of hours until the Aufstellung is
+# actually there; everyone else's are fetched once, after their weekend is over and
+# every report has been filed.
 PRE_MATCH_LOOK = 24                  # our games: one look this many hours before kickoff
 OUR_FIRST_AFTER = timedelta(hours=4)
 OUR_RETRY_EVERY = 2                  # hours between our retries, until the data lands
@@ -50,18 +50,11 @@ GIVE_UP_DAYS = 14                    # a report missing this long is never comin
 MAX_OTHER_PER_RUN = 8                # bounds the Monday batch
 GIVE_UP_AFTER = 3                    # consecutive empty details -> stop asking this run
 
-# The Spieldetail pages (Aufstellung, Spielort, Drittelsresultate) answer with
-# HTTP 403 and, in four languages:
-#     "Ein maschineller Zugriff ist nicht erlaubt und wurde unterbunden"
-#     "Block Bot Score 1 (fvnws.ch)"
-# That is the SFV declining, not a challenge to sit out, so the scraper does not
-# ask for them. Repeatedly collecting 403s would only raise that bot score and put
-# the Spielplan scrape — which still works and the whole site depends on — at risk.
-# Clubs can request proper access to the Spielbetriebsdaten at support@football.ch.
-# Until that is granted the block may well still be in force — the schedule above
-# keeps this to a handful of requests, and a blocked run stops at the first one.
+# Master switch for the Spieldetail requests. The pages do not always serve a
+# report; when they answer with the refusal page below, the run stops asking rather
+# than working through the rest of the list for nothing.
 FETCH_DETAILS = True
-BLOCK_MARKER = "maschineller Zugriff ist nicht erlaubt"
+REFUSAL_MARKER = "maschineller Zugriff ist nicht erlaubt"
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36")
 
@@ -87,7 +80,7 @@ def fetch(page, url, tries=3, expect=None):
         for _ in range(20):  # up to ~40s per attempt
             page.wait_for_timeout(2000)
             html = page.content()
-            if BLOCK_MARKER in html:
+            if REFUSAL_MARKER in html:
                 return html          # a refusal is final; polling it 20x helps nobody
             if _looks_real(html, page.title()) and (not expect or expect in html):
                 return html
@@ -347,8 +340,8 @@ def attach_details(page, games, cached, now):
     the previous run stored, so a skip or a failure never blanks a game.
 
     Two brakes on top: GIVE_UP_AFTER empty answers in a row end the run's detail
-    phase, and the SFV's refusal page ends it immediately — that one is a policy, not
-    a hiccup, and asking again in the same run would only make it worse."""
+    phase, and the refusal page ends it immediately — asking again in the same run
+    would not change the answer."""
     budget, deferred, fetched = MAX_OTHER_PER_RUN, 0, 0
     blocked, unreached = 0, 0
     for g in games:
@@ -375,10 +368,9 @@ def attach_details(page, games, cached, now):
             # not there now will not be there 40 seconds later — the next slot can have
             # it. A refusal short-circuits inside fetch().
             html = fetch(page, HOST + url, tries=1, expect="shortSpielort")
-            if BLOCK_MARKER in html:
-                print("ERROR Spieldetails: der SFV blockiert maschinellen Zugriff "
-                      "(HTTP 403). Abfrage abgebrochen — Zugang via support@football.ch.",
-                      file=sys.stderr)
+            if REFUSAL_MARKER in html:
+                print("NOTE  Spieldetails werden derzeit nicht ausgeliefert — "
+                      "Abfrage für diesen Lauf abgebrochen.", file=sys.stderr)
                 break
             detail = parse_game_detail(html)
         except Exception as exc:                     # best effort, like the scrape itself
@@ -450,8 +442,7 @@ def main():
     played = sum(1 for g in our if g["status"] == "played")
     with_detail = sum(1 for g in games if g.get("detail"))
     if not FETCH_DETAILS:
-        print("NOTE  Spieldetails abgeschaltet (SFV blockiert maschinellen Zugriff). "
-              "Vorhandene Details bleiben erhalten.")
+        print("NOTE  Spieldetails abgeschaltet. Vorhandene Details bleiben erhalten.")
     print(f"OK  {len(games)} group games | our team: {len(our)} games "
           f"({played} played) | {len(standings)} teams in table | "
           f"{with_detail} Spieldetails ({details} neu geholt) | {now}")
