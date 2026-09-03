@@ -49,9 +49,23 @@ function renderHeader() {
   document.getElementById("season-label").textContent = c.season || "";
   document.title = `${c.clubName} · ${c.teamName}`;
 
-  const stamp = (DATA.matches && DATA.matches.updated) || c.lastUpdated;
-  if (stamp) document.getElementById("updated-label").textContent = "Stand: " + fmtStamp(stamp);
+  renderUpdatedLabel();
   document.getElementById("sample-banner").hidden = !c.sampleData;
+}
+
+/* Two different facts, and conflating them reads as a broken site: "Stand" is when
+   the data last CHANGED, "geprüft" when the updater last looked. In a week without
+   a game the first is old and the second is minutes ago — both correct. */
+let checkedLabel = "";
+
+function renderUpdatedLabel() {
+  const el = document.getElementById("updated-label");
+  if (!el) return;
+  const stamp = (DATA.matches && DATA.matches.updated)
+             || (DATA.config && DATA.config.lastUpdated);
+  el.textContent = [stamp ? "Stand: " + fmtStamp(stamp) : "",
+                    checkedLabel ? "geprüft: " + checkedLabel : ""]
+                    .filter(Boolean).join(" · ");
 }
 function fmtDateLongSafe(iso) { try { return fmtDateLong(iso); } catch { return iso; } }
 // Accepts "2026-08-22" or "2026-08-22 13:59" -> "22.08.2026" / "22.08.2026, 13:59"
@@ -70,8 +84,9 @@ function fmtStampFromISO(iso) {
 
 // Show when the auto-updater last ran, read from the GitHub Actions API (no commit needed).
 let lastCheckedAt = 0;
-async function updateLastChecked() {
-  if (Date.now() - lastCheckedAt < 90000) return;
+async function updateLastChecked(force = false) {
+  // Throttled for the automatic calls on tab focus; the refresh button means now.
+  if (!force && Date.now() - lastCheckedAt < 90000) return;
   lastCheckedAt = Date.now();
   try {
     const r = await fetch("https://api.github.com/repos/acrossoneri/d9schwarz/actions/runs?per_page=1",
@@ -80,8 +95,8 @@ async function updateLastChecked() {
     const j = await r.json();
     const run = j.workflow_runs && j.workflow_runs[0];
     const s = run && fmtStampFromISO(run.run_started_at || run.updated_at);
-    if (s) document.getElementById("updated-label").textContent = "Zuletzt geprüft: " + s;
-  } catch (e) { /* keep the fallback "Stand:" label */ }
+    if (s) { checkedLabel = s; renderUpdatedLabel(); }
+  } catch (e) { /* the "Stand:" half stands on its own */ }
 }
 
 function renderStandings() {
@@ -417,7 +432,7 @@ function showTeamGames(team) {
 
 /* ---------- init ---------- */
 
-async function loadAndRender() {
+async function loadAndRender(force = false) {
   const [config, standings, matches, scorers, players, lineups, friendlies] =
     await Promise.all([
     loadJSON("data/config.enc.json"),
@@ -440,7 +455,7 @@ async function loadAndRender() {
   addFriendlies();
 
   renderAll();
-  updateLastChecked();
+  updateLastChecked(force);
 }
 
 /* Games the group Spielplan does not carry — friendlies, cup ties — kept in their
@@ -521,7 +536,7 @@ async function refresh(force = false) {
   const btn = document.getElementById("refresh-btn");
   if (btn) btn.classList.add("spin");
   try {
-    await loadAndRender();
+    await loadAndRender(force);
     lastLoad = Date.now();
     document.getElementById("error-box").hidden = true;
   } catch (err) {
