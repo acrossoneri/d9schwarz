@@ -388,6 +388,17 @@ function activateTab(target) {
   else window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
+/* Which build the browser actually has. GitHub Pages serves index.html with
+   cache-control: max-age=600 and no way to change that, so a stale page is a real
+   possibility — this makes it visible instead of a guess. */
+function showBuild() {
+  const el = document.getElementById("build-label");
+  if (!el) return;
+  const src = [...document.scripts].map(s => s.src).find(s => s.includes("app.js"));
+  const v = (src || "").match(/[?&]v=([0-9a-z]+)/);
+  el.textContent = v ? "Version " + v[1] : "";
+}
+
 function setupTabs() {
   document.querySelectorAll(".tab").forEach(tab => {
     tab.addEventListener("click", () => activateTab(tab.dataset.tab));
@@ -524,6 +535,7 @@ async function refresh(force = false) {
 
 let wired = false;
 function wire() {
+  showBuild();
   if (wired) return;
   wired = true;
   setupTabs();
