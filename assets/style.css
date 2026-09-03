@@ -220,6 +220,11 @@ table.standings { width: 100%; border-collapse: collapse; background: var(--card
 .match.clickable .match-head { cursor: pointer; }
 .match-date { font-size: .74rem; color: var(--muted); text-align: center; min-width: 42px; }
 .match-date .round { display: block; font-size: .66rem; opacity: .8; }
+.match-date .friendly-tag {
+  display: inline-block; margin-top: 2px; padding: 0 6px; border-radius: 999px;
+  background: var(--bg); border: 1px solid var(--line); opacity: 1;
+  font-weight: 700; letter-spacing: .03em;
+}
 .match-teams { display: grid; gap: 2px; min-width: 0; }
 .match-teams .row { display: flex; align-items: center; gap: 8px; }
 .match-teams .name { font-weight: 600; font-size: .95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

@@ -15,6 +15,7 @@ const ADMIN = (() => {
   const FILE = "data/scorers.enc.json";
   const PLAYERS_FILE = "data/players.enc.json";
   const LINEUP_FILE = "data/lineups.enc.json";
+  const FRIENDLY_FILE = "data/friendlies.enc.json";
   const ADMIN_FILE = "data/admin.enc.json";
   const AUTH_FILE = "data/auth.json";
   const TOKEN_KEY = "acr.ghtoken";
@@ -25,6 +26,7 @@ const ADMIN = (() => {
   let dirty = false;          // unsaved scorer edits
   let dirtyPlayers = false;   // unsaved roster edits
   let dirtyLineup = false;    // unsaved line-up edits
+  let dirtyFriendly = false;  // unsaved hand-kept fixtures
   let selectedId = null;
 
   const el = id => document.getElementById(id);
@@ -32,6 +34,44 @@ const ADMIN = (() => {
   const byMatch = () => (DATA.scorers && DATA.scorers.byMatch) || {};
   const ourTeam = () => (DATA.config && DATA.config.ourTeam) || "";
   const byMatchLineup = () => (DATA.lineups && DATA.lineups.byMatch) || {};
+  const friendlies = () => (DATA.friendlies && DATA.friendlies.matches) || [];
+
+  /* Games the group Spielplan does not carry — friendlies, cup ties. Built from an
+     imported report and kept in our own file; the scraper only ever writes the
+     group's games, so the two can never fight. They show up in the Spiele list and
+     the editors like any other game, but never in the table: the standings are
+     computed by the scraper from group results alone. */
+  function addFriendly(report) {
+    if (!report.number || !report.date || !report.home || !report.away) return null;
+    const fixture = {
+      id: String(report.number),
+      date: report.date,
+      time: report.time || null,
+      round: report.round || "Trainingsspiel",
+      home: report.home,
+      away: report.away,
+      homeScore: Number.isFinite(report.homeScore) ? report.homeScore : null,
+      awayScore: Number.isFinite(report.awayScore) ? report.awayScore : null,
+      status: Number.isFinite(report.homeScore) ? "played" : "scheduled",
+      friendly: true,
+    };
+    const list = friendlies();
+    const at = list.findIndex(m => String(m.id) === fixture.id);
+    if (at >= 0) list[at] = fixture; else list.push(fixture);
+    dirtyFriendly = true;
+    // Make it visible to the pickers straight away.
+    const all = (DATA.matches && DATA.matches.matches) || [];
+    if (!all.some(m => String(m.id) === fixture.id)) all.push(fixture);
+    return fixture;
+  }
+
+  async function friendlyFileText() {
+    const clean = [...friendlies()]
+      .sort((a, b) => (a.date || "").localeCompare(b.date || "")
+                      || String(a.id).localeCompare(String(b.id)));
+    const env = await AUTH.encryptEnvelope({ matches: clean }, stamp());
+    return JSON.stringify(env, null, 2) + "\n";
+  }
 
   /* Torschützen werden von Hand erfasst, darum nur für unser eigenes Team: für
      fremde Paarungen liegen die Namen gar nicht vor. Deshalb stehen hier auch
@@ -53,6 +93,7 @@ const ADMIN = (() => {
         at: Date.now(),
         scorers: dirty ? byMatch() : null,
         lineups: dirtyLineup ? byMatchLineup() : null,
+        friendlies: dirtyFriendly ? friendlies() : null,
         players: dirtyPlayers ? roster() : null,
       }));
     } catch { /* private mode, quota — the editor still works, just unprotected */ }
@@ -73,6 +114,9 @@ const ADMIN = (() => {
     }
     if (d.lineups && DATA.lineups) {
       DATA.lineups.byMatch = d.lineups; dirtyLineup = true; what.push("Aufstellung");
+    }
+    if (d.friendlies && DATA.friendlies) {
+      DATA.friendlies.matches = d.friendlies; dirtyFriendly = true; what.push("Spiele");
     }
     if (d.players && DATA.players) {
       DATA.players.players = d.players; dirtyPlayers = true; what.push("Spieler");
@@ -490,6 +534,23 @@ const ADMIN = (() => {
     const number = (txt(head).match(/Spielnummer:?\s*(\d{4,})/) || [])[1] || null;
 
     const report = { number };
+
+    /* The header also names the competition, kickoff and teams, which is all a
+       fixture needs. That is how a friendly gets into the site at all: it is not in
+       the group Spielplan, so there is nothing to attach it to until we make one. */
+    const when = txt(head).match(/(\d{2})\.(\d{2})\.(\d{4})\s+(\d{2}:\d{2})/);
+    if (when) {
+      report.date = `${when[3]}-${when[2]}-${when[1]}`;
+      report.time = when[4];
+      report.round = txt(head).slice(0, when.index).replace(/[\s\-\u2013]+$/, "").trim();
+    }
+    report.home = txt(doc.querySelector(".shortTeamHeim"));
+    report.away = txt(doc.querySelector(".shortTeamGast"));
+    const score = txt(doc.querySelector(".shortResults")).match(/(\d+)\s*:\s*(\d+)/);
+    if (score) {
+      report.homeScore = parseInt(score[1], 10);
+      report.awayScore = parseInt(score[2], 10);
+    }
     const venue = txt(head.querySelector("span.hidden-xs")).replace(/^[\s\-\u2013]+/, "");
     if (venue) report.venue = venue;
 
@@ -543,7 +604,7 @@ const ADMIN = (() => {
 
   async function importReportFiles(files) {
     const known = new Map(ourMatches().map(m => [String(m.id), m]));
-    const done = [], skipped = [];
+    const done = [], skipped = [], extra = [];
 
     for (const file of files) {
       let report = null;
@@ -552,14 +613,21 @@ const ADMIN = (() => {
       } catch { /* falls through to the skipped list */ }
       if (!report) { skipped.push(`${file.name}: kein Spielbericht erkennbar`); continue; }
 
-      const match = known.get(String(report.number));
-      if (!match) {
-        skipped.push(`Spiel ${report.number || "?"}: nicht in unserem Spielplan`
-                   + (report.number ? " (Trainingsspiel?)" : ""));
-        continue;
-      }
       const ours = report.lineups.find(l => l.team === ourTeam());
       if (!ours) { skipped.push(`Spiel ${report.number}: keine Aufstellung von uns`); continue; }
+
+      // Not in the group Spielplan — a friendly. Build the fixture from the report
+      // and keep it in our own file, which the scraper never touches.
+      let match = known.get(String(report.number));
+      if (!match) {
+        match = addFriendly(report);
+        if (!match) {
+          skipped.push(`Spiel ${report.number || "?"}: zu wenig Angaben für ein eigenes Spiel`);
+          continue;
+        }
+        known.set(String(match.id), match);
+        extra.push(matchLabel(match));
+      }
 
       const record = { starting: ours.starting, subs: ours.subs };
       if (report.venue) record.venue = report.venue;
@@ -582,6 +650,7 @@ const ADMIN = (() => {
     }
     const note = [done.length ? `${done.length} Spielbericht(e) übernommen: ${done.join(" · ")}.`
                               : "Nichts übernommen.",
+                  extra.length ? `Als eigenes Spiel angelegt: ${extra.join(", ")}.` : "",
                   skipped.length ? `Übersprungen: ${skipped.join("; ")}.` : ""]
                  .filter(Boolean).join(" ");
     renderStatus(note + (done.length ? " Bitte veröffentlichen." : ""),
@@ -885,6 +954,7 @@ const ADMIN = (() => {
     const s = el("publish-state");
     if (s) {
       const what = [dirty ? "Torschützen" : "", dirtyLineup ? "Aufstellung" : "",
+                    dirtyFriendly ? "Spiele" : "",
                     dirtyPlayers ? "Spieler" : ""].filter(Boolean);
       s.className = "publish-state" + (kind ? " " + kind : "");
       s.textContent = message
@@ -892,7 +962,7 @@ const ADMIN = (() => {
                         : "Alles gespeichert.");
     }
     const btn = el("publish-btn");
-    if (btn) btn.disabled = busy || !(dirty || dirtyLineup || dirtyPlayers);
+    if (btn) btn.disabled = busy || !(dirty || dirtyLineup || dirtyFriendly || dirtyPlayers);
     renderTokenState();
   }
 
@@ -1014,6 +1084,8 @@ const ADMIN = (() => {
       if (dirty) jobs.push([FILE, await fileText(), "data: Torschützen manuell erfasst"]);
       if (dirtyLineup) jobs.push([LINEUP_FILE, await lineupFileText(),
                                   "data: Aufstellung erfasst"]);
+      if (dirtyFriendly) jobs.push([FRIENDLY_FILE, await friendlyFileText(),
+                                    "data: Spiel von Hand erfasst"]);
       if (dirtyPlayers) jobs.push([PLAYERS_FILE, await playersFileText(),
                                    "data: Spielerliste aktualisiert"]);
       if (!jobs.length) { busy = false; renderStatus(); return; }
@@ -1034,6 +1106,7 @@ const ADMIN = (() => {
         }
         if (path === FILE) dirty = false;
         else if (path === LINEUP_FILE) dirtyLineup = false;
+        else if (path === FRIENDLY_FILE) dirtyFriendly = false;
         else dirtyPlayers = false;
       }
       busy = false;
@@ -1248,13 +1321,16 @@ const ADMIN = (() => {
 
     // A half-typed scorer is easy to lose on a phone; warn before leaving.
     window.addEventListener("beforeunload", (e) => {
-      if (dirty || dirtyLineup || dirtyPlayers) { e.preventDefault(); e.returnValue = ""; }
+      if (dirty || dirtyLineup || dirtyFriendly || dirtyPlayers) {
+        e.preventDefault(); e.returnValue = "";
+      }
     });
   }
 
   function unmount() {
     dirty = false;
     dirtyLineup = false;
+    dirtyFriendly = false;
     dirtyPlayers = false;
     selectedId = null;
     ["player-editor", "roster-list", "lineup-editor"].forEach(id => {
@@ -1292,8 +1368,11 @@ const ADMIN = (() => {
 
   return {
     mount, unmount, render,
-    isDirty: () => dirty || dirtyLineup || dirtyPlayers,
+    isDirty: () => dirty || dirtyLineup || dirtyFriendly || dirtyPlayers,
     // An explicit discard is the one place the saved draft should go too.
-    discard: () => { dirty = dirtyLineup = dirtyPlayers = false; clearDraft(); },
+    discard: () => {
+      dirty = dirtyLineup = dirtyFriendly = dirtyPlayers = false;
+      clearDraft();
+    },
   };
 })();

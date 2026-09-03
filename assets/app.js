@@ -3,7 +3,7 @@
    No framework, no build step. */
 
 const DATA = { config: null, standings: null, matches: null, scorers: null,
-               players: null, lineups: null };
+               players: null, lineups: null, friendlies: null };
 
 // A friendly note for anyone poking around in the sources.
 console.log(
@@ -199,8 +199,11 @@ function matchCard(m, isPlayed) {
   const head = document.createElement("button");
   head.className = "match-head";
   head.type = "button";
+  // A hand-kept game is marked, so nobody wonders why it is not in the table.
+  const tag = m.friendly ? `<span class="round friendly-tag">Test</span>` : "";
   head.innerHTML =
-    `<div class="match-date">${fmtDate(m.date)}<span class="round">${esc(m.round || "")}</span></div>` +
+    `<div class="match-date">${fmtDate(m.date)}` +
+      `<span class="round">${esc(m.round || "")}</span>${tag}</div>` +
     `<div class="match-teams">` +
       `<div class="row"><span class="name${isUs(m.home) ? " us" : ""}">${esc(m.home)}</span></div>` +
       `<div class="row"><span class="name${isUs(m.away) ? " us" : ""}">${esc(m.away)}</span></div>` +
@@ -404,7 +407,8 @@ function showTeamGames(team) {
 /* ---------- init ---------- */
 
 async function loadAndRender() {
-  const [config, standings, matches, scorers, players, lineups] = await Promise.all([
+  const [config, standings, matches, scorers, players, lineups, friendlies] =
+    await Promise.all([
     loadJSON("data/config.enc.json"),
     loadJSON("data/standings.enc.json"),
     loadJSON("data/matches.enc.json"),
@@ -413,6 +417,7 @@ async function loadAndRender() {
     loadJSON("data/players.enc.json").catch(() => ({ players: [] })),
     // Written from the Einstellungen tab; absent until an admin saves the first one.
     loadJSON("data/lineups.enc.json").catch(() => ({ byMatch: {} })),
+    loadJSON("data/friendlies.enc.json").catch(() => ({ matches: [] })),
   ]);
   DATA.config = config;
   DATA.standings = standings;
@@ -420,9 +425,25 @@ async function loadAndRender() {
   DATA.scorers = scorers && scorers.byMatch ? scorers : { byMatch: {} };
   DATA.players = { players: (players && players.players) || [] };
   DATA.lineups = lineups && lineups.byMatch ? lineups : { byMatch: {} };
+  DATA.friendlies = { matches: (friendlies && friendlies.matches) || [] };
+  addFriendlies();
 
   renderAll();
   updateLastChecked();
+}
+
+/* Games the group Spielplan does not carry — friendlies, cup ties — kept in their
+   own file and folded into the fixture list. They deliberately never reach
+   renderStandings(): the table comes from the scraper, computed from group results
+   only, so a friendly cannot move anyone up it. */
+function addFriendlies() {
+  const extra = (DATA.friendlies && DATA.friendlies.matches) || [];
+  if (!extra.length || !DATA.matches) return;
+  const all = DATA.matches.matches || (DATA.matches.matches = []);
+  const have = new Set(all.map(m => String(m.id)));
+  extra.forEach(m => {
+    if (m && m.id && !have.has(String(m.id))) all.push({ ...m, friendly: true });
+  });
 }
 
 // Our own line-up, typed in the Einstellungen tab. The coach files it with the
@@ -535,7 +556,7 @@ const App = {
   stop() {
     ADMIN.unmount();
     DATA.config = DATA.standings = DATA.matches = DATA.scorers = null;
-    DATA.players = DATA.lineups = null;
+    DATA.players = DATA.lineups = DATA.friendlies = null;
     lastLoad = 0;
     document.querySelector("#standings-table tbody").innerHTML = "";
     ["match-list", "scorer-list", "team-filter",

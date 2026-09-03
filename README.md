@@ -12,9 +12,10 @@ Die Seite ist statisch, es gibt also keinen Server, der ein Passwort prüfen kö
 Ein Login-Formular allein wäre wirkungslos — man könnte `data/matches.json` einfach
 direkt aufrufen. Deshalb sind **die Datendateien selbst verschlüsselt**:
 
-`data/scorers.enc.json`, `data/players.enc.json` und `data/lineups.enc.json` sind
-handgepflegt und dürfen **fehlen** — die Seite lädt dann mit leeren Listen, und das
-erste Veröffentlichen legt die Datei an.
+`data/scorers.enc.json`, `data/players.enc.json`, `data/lineups.enc.json` und
+`data/friendlies.enc.json` sind handgepflegt und dürfen **fehlen** — die Seite lädt
+dann mit leeren Listen, und das erste Veröffentlichen legt die Datei an. Der Scraper
+schreibt keine davon.
 
 * `data/*.enc.json` — AES-256-GCM. Ohne Passwort nicht lesbar, egal wie man sie abruft.
 * Verschlüsselt wird mit einem zufälligen **Master-Key**. Jedes Konto trägt diesen
@@ -67,6 +68,13 @@ Spiels; meist ändern sich nur ein, zwei Namen.
 
 Das ist der Weg, der ohne Freigabe des SFV funktioniert: Die Daten sind ohnehin
 unsere, sie machen nur einen Umweg weniger.
+
+**Eigene Spiele** — Berichte zu Spielen, die nicht im Gruppen-Spielplan stehen
+(Trainingsspiele, Cup), legen sich beim Einlesen selbst als Spiel an: Datum,
+Anpfiff, Teams, Resultat und Runde stehen im Kopf des Berichts. Sie landen in
+`data/friendlies.enc.json`, erscheinen in der Spieleliste mit dem Vermerk „Test“
+und tauchen in der **Tabelle nie** auf — die kommt vom Scraper und wird
+ausschliesslich aus Gruppenspielen gerechnet.
 
 **Spielbericht-Datei einlesen** — die Spielseite im Browser mit Strg+S speichern
 und die HTML-Datei(en) im Einstellungen-Tab wählen. Daraus kommen Aufstellung,

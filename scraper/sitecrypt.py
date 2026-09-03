@@ -67,7 +67,8 @@ ROLES = ("admin", "viewer")
 # admin.enc.json holds the GitHub token the Einstellungen page publishes with, so
 # admins don't have to paste it on every device. Encrypted, because a plaintext
 # token in a public repo gets revoked by GitHub's secret scanning within minutes.
-ENCRYPTED = ("config", "matches", "standings", "scorers", "players", "lineups", "admin")
+ENCRYPTED = ("config", "matches", "standings", "scorers", "players", "lineups",
+             "friendlies", "admin")
 
 BAD_CREDS = "ERROR: unknown username or wrong password."
 
