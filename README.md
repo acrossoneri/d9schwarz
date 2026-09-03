@@ -160,6 +160,22 @@ SITE_USER=... SITE_PASSWORD=... python scraper/scrape.py
 Braucht die Zugangsdaten, weil er verschlüsselt schreibt. Unveränderte Daten ergeben
 byte-identische Dateien — also keine leeren Commits.
 
+### Berichte von Hand einlesen
+
+Gespeicherte Spielberichte lassen sich auch ohne Browser einlesen — nützlich, um
+mehrere auf einmal zu verarbeiten:
+
+```bash
+python scraper/import_reports.py ~/acrosso-reports/*.html \
+  --scorers 145015=Marlon,Dean,Dean,Dean,Dean,Marlon --scorers 145019=Dean
+```
+
+Fragt nach Benutzername und Passwort (oder nimmt `SITE_USER`/`SITE_PASSWORD`),
+schreibt `lineups`, `players`, `friendlies` und — mit `--scorers` — `scorers`.
+Spiele ohne Eintrag im Spielplan legt es selbst an, Torschützennamen werden gegen
+das Aufgebot des Spiels aufgelöst (Vorname genügt, Tippfehler bis zwei Buchstaben).
+`--dry-run` zeigt nur, was passieren würde.
+
 ### Spieldetails
 
 Neben der Gruppen-Spielplanseite holt der Scraper zu jedem Spiel auch die
