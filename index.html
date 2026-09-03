@@ -7,7 +7,7 @@
   <meta name="description" content="Tabelle, Spielplan, Resultate und Torschützen der Junioren D-9 schwarz des AC Rossoneri." />
   <meta name="robots" content="noindex, nofollow" />
   <link rel="icon" href="assets/logo.png" />
-  <link rel="stylesheet" href="assets/style.css?v=20260903e" />
+  <link rel="stylesheet" href="assets/style.css?v=20260903f" />
 </head>
 <body>
   <!--
@@ -137,21 +137,21 @@
         Verband meldest — hier eingetippt erscheint sie im Spielbericht, und das
         Namensfeld bei den Torschützen schlägt sie vor.</p>
 
+      <div class="import-box">
+        <p class="import-title">Spielbericht-Datei einlesen</p>
+        <p class="hint">Der schnellste Weg: Spielseite im Browser mit <kbd>Strg</kbd>+<kbd>S</kbd>
+          speichern und die HTML-Datei hier wählen — mehrere auf einmal gehen auch.
+          Aufstellung, Spielort, Drittelsresultate, Karten und die Aufstellung des
+          Gegners werden übernommen und dem richtigen Spiel zugeordnet. Spiele, die
+          nicht im Spielplan stehen, werden dabei selbst angelegt.</p>
+        <input id="report-files" type="file" accept=".html,.htm,text/html" multiple />
+      </div>
+
       <div id="lineup-editor" class="scorer-editor"></div>
       <div class="lineup-actions">
         <button id="lineup-add" class="btn-secondary" type="button">+ Spieler</button>
         <button id="lineup-copy" class="btn-secondary btn-slim" type="button">Vom letzten Spiel übernehmen</button>
       </div>
-
-      <details class="paste-box">
-        <summary>Spielbericht-Datei einlesen</summary>
-        <p class="hint">Spielseite im Browser mit <kbd>Strg</kbd>+<kbd>S</kbd> speichern
-          und die HTML-Datei hier wählen — mehrere auf einmal gehen auch. Aufstellung,
-          Spielort, Drittelsresultate, Karten und die Aufstellung des Gegners werden
-          übernommen und dem richtigen Spiel zugeordnet. Die Datei wird lokal
-          gelesen, es geht keine Abfrage von der Seite aus.</p>
-        <input id="report-files" type="file" accept=".html,.htm,text/html" multiple />
-      </details>
 
       <details class="paste-box">
         <summary>Aufstellung als Text einfügen</summary>
@@ -241,8 +241,8 @@
   </footer>
   </div><!-- /#app -->
 
-  <script src="assets/auth.js?v=20260903e"></script>
-  <script src="assets/app.js?v=20260903e"></script>
-  <script src="assets/admin.js?v=20260903e"></script>
+  <script src="assets/auth.js?v=20260903f"></script>
+  <script src="assets/app.js?v=20260903f"></script>
+  <script src="assets/admin.js?v=20260903f"></script>
 </body>
 </html>

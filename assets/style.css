@@ -373,6 +373,20 @@ table.standings { width: 100%; border-collapse: collapse; background: var(--card
   .lu-row .sc-del { grid-area: del; width: 100%; }
 }
 .lineup-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+/* The primary way in, so it is not hidden behind a disclosure triangle. */
+.import-box {
+  border: 1px solid var(--line); border-left: 3px solid var(--red);
+  border-radius: var(--radius); background: var(--card);
+  padding: 10px 12px; margin: 8px 0 14px;
+}
+.import-title { font-weight: 700; font-size: .88rem; margin: 0 0 4px; }
+.import-box .hint { margin: 0 0 8px; }
+.import-box input[type="file"] { font: inherit; font-size: .82rem; color: var(--ink); max-width: 100%; }
+.import-box kbd {
+  font: inherit; font-size: .74rem; background: var(--bg); border: 1px solid var(--line);
+  border-radius: 4px; padding: 0 4px;
+}
+
 .paste-box { margin-bottom: 14px; }
 .paste-box summary {
   cursor: pointer; font-size: .84rem; font-weight: 600; color: var(--muted); padding: 4px 0;
