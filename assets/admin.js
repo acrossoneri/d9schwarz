@@ -477,6 +477,117 @@ const ADMIN = (() => {
     return rows;
   }
 
+  /* Import a match report the coach saved from their browser (Ctrl+S). Reads the
+     file locally — the same page a person may open, parsed here instead of typed.
+     Mirrors parse_game_detail() in scraper/scrape.py; keep the two in step. */
+
+  function parseReportHTML(html) {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    const txt = node => node ? node.textContent.replace(/\s+/g, " ").trim() : "";
+
+    const head = doc.querySelector(".shortSpielort");
+    if (!head) return null;
+    const number = (txt(head).match(/Spielnummer:?\s*(\d{4,})/) || [])[1] || null;
+
+    const report = { number };
+    const venue = txt(head.querySelector("span.hidden-xs")).replace(/^[\s\-\u2013]+/, "");
+    if (venue) report.venue = venue;
+
+    const periods = txt(doc.querySelector("div[id$='divToreViertel']")).replace(/[()]/g, "");
+    const parts = periods.split("/").map(x => x.trim()).filter(Boolean);
+    if (parts.length) report.periods = parts;
+
+    const events = [];
+    doc.querySelectorAll("ul.bnEventsList > li").forEach(li => {
+      const label = txt(li.querySelector(".eventlabel"));
+      if (!label) return;
+      const ev = { text: label };
+      const minute = txt(li.querySelector("time.timeline-time")).match(/(\d+)/);
+      if (minute) ev.minute = parseInt(minute[1], 10);
+      const img = li.querySelector("img");
+      const icon = img ? (img.getAttribute("src") || "").split("/").pop().split(".")[0] : "";
+      if (icon) ev.kind = icon;
+      events.push(ev);
+    });
+    if (events.length) report.events = events;
+
+    report.lineups = [...doc.querySelectorAll("div[id$='phAufstellung'] > div.col-sm-6")]
+      .map(block => {
+        const out = { team: txt(block.querySelector(".eventsTeamName")),
+                      starting: [], subs: [], coaches: [] };
+        let section = "starting";
+        block.querySelectorAll("table.table-hover tr").forEach(tr => {
+          const titel = txt(tr.querySelector(".aufTitel")).toLowerCase();
+          if (titel) {
+            if (IS_SUBS.test(titel)) section = "subs";
+            else if (IS_COACH.test(titel)) section = "coaches";
+            return;
+          }
+          const name = txt(tr.querySelector(".aufName"));
+          if (!name) return;                       // the "= Kein Einsatz" legend row
+          const player = { name: name.replace(CAPTAIN_SUFFIX, "").trim() };
+          const num = txt(tr.querySelector(".eventsTime"));
+          if (/^\d{1,2}$/.test(num)) player.number = parseInt(num, 10);
+          const pos = txt(tr.querySelector(".aufPos"));
+          if (pos) player.position = pos;
+          if (tr.querySelector(".aufCaptain") || CAPTAIN_SUFFIX.test(name)) player.captain = true;
+          if (tr.querySelector(".aufStern")) player.unused = true;
+          out[section].push(player);
+        });
+        return out;
+      })
+      .filter(l => l.starting.length || l.subs.length);
+
+    return report.lineups.length ? report : null;
+  }
+
+  async function importReportFiles(files) {
+    const known = new Map(ourMatches().map(m => [String(m.id), m]));
+    const done = [], skipped = [];
+
+    for (const file of files) {
+      let report = null;
+      try {
+        report = parseReportHTML(await file.text());
+      } catch { /* falls through to the skipped list */ }
+      if (!report) { skipped.push(`${file.name}: kein Spielbericht erkennbar`); continue; }
+
+      const match = known.get(String(report.number));
+      if (!match) {
+        skipped.push(`Spiel ${report.number || "?"}: nicht in unserem Spielplan`
+                   + (report.number ? " (Trainingsspiel?)" : ""));
+        continue;
+      }
+      const ours = report.lineups.find(l => l.team === ourTeam());
+      if (!ours) { skipped.push(`Spiel ${report.number}: keine Aufstellung von uns`); continue; }
+
+      const record = { starting: ours.starting, subs: ours.subs };
+      if (report.venue) record.venue = report.venue;
+      if (report.periods) record.periods = report.periods;
+      if (report.events) record.events = report.events;
+      const opponents = report.lineups.filter(l => l.team && l.team !== ourTeam());
+      if (opponents.length) record.opponents = opponents;
+      byMatchLineup()[match.id] = record;
+
+      selectedId = match.id;
+      done.push(`${matchLabel(match)} — ${ours.starting.length} Start, ${ours.subs.length} Ersatz`
+              + (opponents.length ? ", Gegner dazu" : ""));
+    }
+
+    if (done.length) {
+      markLineupDirty();
+      renderMatchPicker();
+      renderEditor();
+      renderPlayers();
+    }
+    const note = [done.length ? `${done.length} Spielbericht(e) übernommen: ${done.join(" · ")}.`
+                              : "Nichts übernommen.",
+                  skipped.length ? `Übersprungen: ${skipped.join("; ")}.` : ""]
+                 .filter(Boolean).join(" ");
+    renderStatus(note + (done.length ? " Bitte veröffentlichen." : ""),
+                 done.length ? "ok" : "err");
+  }
+
   function importPastedLineup() {
     const m = currentMatch();
     const area = el("lineup-paste");
@@ -1082,6 +1193,11 @@ const ADMIN = (() => {
     on("lineup-add", "click", addLineupRow);
     on("lineup-copy", "click", copyPreviousLineup);
     on("lineup-import", "click", importPastedLineup);
+    on("report-files", "change", (e) => {
+      const files = [...(e.target.files || [])];
+      if (files.length) importReportFiles(files);
+      e.target.value = "";                        // so the same file can be picked twice
+    });
     on("player-add", "click", addPlayer);
     on("publish-btn", "click", publish);
     on("user-add", "click", addUser);

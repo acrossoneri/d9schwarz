@@ -408,7 +408,8 @@ async function loadAndRender() {
     loadJSON("data/config.enc.json"),
     loadJSON("data/standings.enc.json"),
     loadJSON("data/matches.enc.json"),
-    loadJSON("data/scorers.enc.json"),
+    // Both are hand-maintained and may not exist at all — an empty site is valid.
+    loadJSON("data/scorers.enc.json").catch(() => ({ byMatch: {} })),
     loadJSON("data/players.enc.json").catch(() => ({ players: [] })),
     // Written from the Einstellungen tab; absent until an admin saves the first one.
     loadJSON("data/lineups.enc.json").catch(() => ({ byMatch: {} })),
@@ -437,7 +438,16 @@ function mergeLineups() {
     const mine = { team: our, starting: own.starting || [], subs: own.subs || [],
                    coaches: own.coaches || [] };
     const detail = m.detail || (m.detail = {});
-    const rest = (detail.lineups || []).filter(l => l && l.team !== our);
+    // An imported report also carries the things the group Spielplan never has.
+    if (own.venue && !detail.venue) detail.venue = own.venue;
+    if (own.periods && !detail.periods) detail.periods = own.periods;
+    if (own.events && !detail.events) detail.events = own.events;
+    // Opponent line-ups from the same report, minus any we already hold.
+    const imported = (own.opponents || []).filter(l => l && l.team && l.team !== our);
+    const importedNames = new Set(imported.map(l => l.team));
+    const rest = [...imported,
+                  ...(detail.lineups || []).filter(l => l && l.team !== our
+                                                        && !importedNames.has(l.team))];
     // Home team first, the way a game report reads.
     detail.lineups = m.home === our ? [mine, ...rest] : [...rest, mine];
   });

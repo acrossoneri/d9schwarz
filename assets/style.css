@@ -371,6 +371,11 @@ table.standings { width: 100%; border-collapse: collapse; background: var(--card
   padding: 9px 10px; margin-bottom: 8px; resize: vertical;
 }
 .paste-box textarea:focus { outline: 2px solid var(--red); outline-offset: 1px; }
+.paste-box input[type="file"] { font: inherit; font-size: .82rem; color: var(--ink); max-width: 100%; }
+.paste-box kbd {
+  font: inherit; font-size: .74rem; background: var(--bg); border: 1px solid var(--line);
+  border-radius: 4px; padding: 0 4px;
+}
 /* `select.sc-team`, not `.sc-team` — the Torschützen list uses a <span> of the
    same name for its subtitle, and it must not turn into a form control.
    The <select> itself is now only used by the role picker in the user list. */

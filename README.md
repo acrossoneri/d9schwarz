@@ -12,6 +12,10 @@ Die Seite ist statisch, es gibt also keinen Server, der ein Passwort prüfen kö
 Ein Login-Formular allein wäre wirkungslos — man könnte `data/matches.json` einfach
 direkt aufrufen. Deshalb sind **die Datendateien selbst verschlüsselt**:
 
+`data/scorers.enc.json`, `data/players.enc.json` und `data/lineups.enc.json` sind
+handgepflegt und dürfen **fehlen** — die Seite lädt dann mit leeren Listen, und das
+erste Veröffentlichen legt die Datei an.
+
 * `data/*.enc.json` — AES-256-GCM. Ohne Passwort nicht lesbar, egal wie man sie abruft.
 * Verschlüsselt wird mit einem zufälligen **Master-Key**. Jedes Konto trägt diesen
   Key eingepackt („wrapped“) unter einem Schlüssel, der aus **Benutzername +
@@ -64,7 +68,16 @@ Spiels; meist ändern sich nur ein, zwei Namen.
 Das ist der Weg, der ohne Freigabe des SFV funktioniert: Die Daten sind ohnehin
 unsere, sie machen nur einen Umweg weniger.
 
-**Aus dem Matchcenter einfügen** — wer die Spielseite im Browser offen hat, kann
+**Spielbericht-Datei einlesen** — die Spielseite im Browser mit Strg+S speichern
+und die HTML-Datei(en) im Einstellungen-Tab wählen. Daraus kommen Aufstellung,
+Spielort, Drittelsresultate, Karten **und die Aufstellung des Gegners**; zugeordnet
+wird über die Spielnummer im Bericht. Mehrere Dateien auf einmal gehen. Berichte zu
+Spielen, die nicht im Gruppen-Spielplan stehen (z. B. Trainingsspiele), werden mit
+Begründung übersprungen. Gelesen wird lokal im Browser — es geht keine Abfrage von
+der Seite aus. `parseReportHTML()` in `admin.js` spiegelt `parse_game_detail()` in
+`scrape.py`; die zwei gehören zusammen gepflegt.
+
+**Aufstellung als Text einfügen** — wer die Spielseite im Browser offen hat, kann
 den Block „Aufstellung“ markieren, kopieren und hier einfügen; Nummer, Name,
 Position und Captain werden übernommen. Das Kopieren macht der Mensch im eigenen
 Browser, die Seite parst nur den Text — es geht keine Abfrage von uns aus. Die
