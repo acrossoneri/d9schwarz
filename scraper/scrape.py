@@ -176,7 +176,16 @@ def parse_game_detail(html):
         if minute:
             ev["minute"] = int(minute.group(1))
         if icon:
-            ev["kind"] = icon          # "gelb", "rot", … — the icon names the event
+            ev["kind"] = icon          # "gelb", "rot", "tor" — the icon names the event
+        # A goal carries the scorer in a text node after the label, and the running
+        # score beside the icon: "Tor Rossoneri" / "Torschütze Amar Ejupi" / "7:6".
+        body = _txt(li.select_one(".col-sm-11"))
+        scorer = re.search(r"Torsch[üu]tze\s*:?\s*(.+)$", body)
+        if scorer:
+            ev["scorer"] = scorer.group(1).strip()
+        running = re.search(r"(\d+\s*:\s*\d+)", _txt(li.select_one(".col-sm-1")))
+        if running:
+            ev["score"] = re.sub(r"\s+", "", running.group(1))
         events.append(ev)
     if events:
         detail["events"] = events

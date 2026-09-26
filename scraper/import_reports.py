@@ -149,6 +149,7 @@ def main():
     friendlies.setdefault("matches", [])
 
     seen = []
+    auto_scorers = {}
     for path in args.reports:
         report = parse_report(path)
         if not report:
@@ -180,6 +181,8 @@ def main():
         else:
             note = ""
         seen.append(gid)
+        if detail.get("events"):
+            auto_scorers[gid] = detail
         print(f"  {gid}  {fx['date']}  {fx['home']} {fx['homeScore']}:{fx['awayScore']} "
               f"{fx['away']}  — {len(ours['starting'])} Start / {len(ours['subs'])} Ersatz"
               f"{note}")
@@ -201,9 +204,32 @@ def main():
     players = [{"name": n, **({"number": num} if num is not None else {})}
                for n, (_when, num) in sorted(squad.items())]
 
-    # Scorers, matched against the squad of the game they belong to.
+    # Scorers. Where the report names them, take them from there; --scorers then
+    # only has to cover the games whose Verlauf is empty.
     scorers = _load("scorers", key, {"byMatch": {}})
     scorers.setdefault("byMatch", {})
+    given = {parse_scorer_arg(a)[0] for a in args.scorers}
+    for gid, detail in auto_scorers.items():
+        if gid in given:
+            continue                          # an explicit list always wins
+        rec = lineups["byMatch"].get(gid, {})
+        squad = [p["name"] for p in rec.get("starting", []) + rec.get("subs", [])]
+        ours_goals = []
+        for ev in detail.get("events", []):
+            if ev.get("kind") != "tor" or not ev.get("scorer"):
+                continue
+            # Whose goal it is follows from whose squad the scorer is in.
+            if not resolve(ev["scorer"], squad):
+                continue
+            entry = {"player": resolve(ev["scorer"], squad), "team": our}
+            if ev.get("minute") is not None:
+                entry["minute"] = ev["minute"]
+            ours_goals.append(entry)
+        if ours_goals:
+            ours_goals.sort(key=lambda e: e.get("minute") or 0)
+            scorers["byMatch"][gid] = ours_goals
+            print(f"  Torschützen {gid} aus dem Bericht: "
+                  + ", ".join(f"{e['player']} {e.get('minute','')}'" for e in ours_goals))
     for arg in args.scorers:
         gid, entries = parse_scorer_arg(arg)
         rec = lineups["byMatch"].get(gid, {})

@@ -650,6 +650,13 @@ const ADMIN = (() => {
       const img = li.querySelector("img");
       const icon = img ? (img.getAttribute("src") || "").split("/").pop().split(".")[0] : "";
       if (icon) ev.kind = icon;
+      // A goal names its scorer in a text node after the label, and shows the
+      // running score beside the icon.
+      const body = txt(li.querySelector(".col-sm-11"));
+      const scorer = body.match(/Torsch[üu]tze\s*:?\s*(.+)$/);
+      if (scorer) ev.scorer = scorer[1].trim();
+      const running = txt(li.querySelector(".col-sm-1")).match(/(\d+)\s*:\s*(\d+)/);
+      if (running) ev.score = running[1] + ":" + running[2];
       events.push(ev);
     });
     if (events.length) report.events = events;
