@@ -281,30 +281,43 @@ table.standings { width: 100%; border-collapse: collapse; background: var(--card
   border-radius: 999px; padding: 0 5px; vertical-align: 1px;
 }
 
-/* Scorers */
-.scorer-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.scorer {
+/* Statistik */
+.stats-wrap {
   background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
-  box-shadow: var(--shadow); overflow: hidden;
+  box-shadow: var(--shadow); overflow-x: auto;
 }
-.scorer-head {
-  width: 100%; display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 12px;
-  background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer;
-  padding: 11px 14px;
-}
-.scorer-rank { font-weight: 800; color: var(--red); width: 26px; text-align: center; font-variant-numeric: tabular-nums; }
-.scorer .sc-name { font-weight: 600; }
-.sc-name .sc-team { display: block; font-weight: 500; color: var(--muted); font-size: .72rem; margin-top: 1px; }
-.scorer .sc-goals { font-weight: 800; text-align: right; }
-.scorer .sc-goals span { font-weight: 500; color: var(--muted); font-size: .8rem; margin-left: 4px; }
-.scorer .chev { color: var(--muted); font-size: .8rem; }
+table.stats { width: 100%; border-collapse: collapse; font-size: .9rem; }
+table.stats th, table.stats td { padding: 9px 8px; border-bottom: 1px solid var(--line); }
+table.stats tbody tr:last-child td { border-bottom: 0; }
 
-.scorer-vs { display: none; padding: 0 14px 12px; border-top: 1px dashed var(--line); }
-.scorer.open .scorer-vs { display: block; }
-.scorer-vs strong { display: block; font-size: .8rem; margin: 8px 0 6px; color: var(--muted); font-weight: 600; }
-.scorer-vs ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
-.scorer-vs li { display: flex; justify-content: space-between; font-size: .88rem; }
-.scorer-vs li .c { color: var(--muted); font-variant-numeric: tabular-nums; }
+table.stats thead th { padding: 0; background: var(--bg); position: sticky; top: 0; }
+table.stats thead th button {
+  width: 100%; appearance: none; background: none; border: 0; cursor: pointer;
+  font: inherit; font-size: .76rem; font-weight: 700; color: var(--muted);
+  padding: 9px 8px; text-align: right; white-space: nowrap;
+}
+table.stats thead th.c-name button { text-align: left; }
+table.stats thead th button:hover { color: var(--red); }
+table.stats thead th.sorted button { color: var(--red); }
+
+table.stats .c-num { text-align: right; font-variant-numeric: tabular-nums; width: 1%; white-space: nowrap; }
+table.stats .c-name { text-align: left; }
+table.stats td.c-num { color: var(--muted); }
+table.stats td.c-num.strong { color: var(--ink); font-weight: 700; }
+table.stats td.c-name { font-weight: 600; }
+table.stats tbody tr.clickable { cursor: pointer; }
+table.stats tbody tr.clickable:hover td { background: var(--us-bg); }
+table.stats .chev { color: var(--muted); font-size: .72rem; margin-left: 6px; }
+table.stats tr.open .chev { color: var(--red); }
+
+/* The goals behind a row, revealed on tap. */
+tr.stat-detail td { background: var(--bg); padding: 8px 12px 12px; }
+tr.stat-detail strong {
+  display: block; font-size: .78rem; margin: 2px 0 6px; color: var(--muted); font-weight: 600;
+}
+tr.stat-detail ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+tr.stat-detail li { display: flex; justify-content: space-between; font-size: .86rem; }
+tr.stat-detail li .c { color: var(--muted); font-variant-numeric: tabular-nums; }
 
 /* Einstellungen (Admin) */
 .field-label { display: block; font-size: .78rem; font-weight: 600; color: var(--muted); margin-bottom: 4px; }

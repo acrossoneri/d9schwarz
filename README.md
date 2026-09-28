@@ -37,13 +37,28 @@ Klartext-Dateien (`data/config.json`, `matches.json`, `standings.json`) sind in
 
 | Rolle | Sieht |
 |-------|-------|
-| `viewer` | Tabelle, Spiele, Torschützen |
+| `viewer` | Tabelle, Spiele, Statistik |
 | `admin` | zusätzlich den Tab **Einstellungen** |
 
 Wichtig zur Einordnung: der Login schützt die **Daten**, die Rolle steuert nur die
 **Oberfläche**. Wer angemeldet ist, hält den Master-Key — die Rolle ist also keine
 Sicherheitsgrenze. Was Änderungen wirklich absichert, ist der GitHub-Token: ohne
 ihn kann niemand etwas veröffentlichen.
+
+## Statistik
+
+Der Tab **Statistik** listet alle Spieler der Mannschaft mit Spielen, Toren und
+Karten. Die Zahlen werden beim Anzeigen gerechnet, nicht gespeichert:
+
+* **Spiele** — Einsätze aus den erfassten Aufstellungen. Wer als „kein Einsatz“
+  auf der Bank stand, erscheint in der Liste, aber das Spiel zählt nicht.
+* **Tore** — aus den Torschützenlisten; die Zeile lässt sich aufklappen und zeigt
+  jedes Tor mit Gegner und, wo bekannt, Minute.
+* **Karten** — aus dem Verlauf des Spielberichts. Der Name wird aus dem Text
+  („Verwarnung Lian Timo Gisin (Rossoneri)“) gelöst; Karten gegnerischer Spieler
+  stehen in derselben Liste und werden über den Namensabgleich ausgesiebt.
+
+Ein Klick auf eine Spaltenüberschrift sortiert, ein zweiter dreht um.
 
 ## Einstellungen (Admin)
 

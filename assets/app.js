@@ -1,5 +1,5 @@
 /* AC Rossoneri – Junioren D-9 schwarz
-   Loads local JSON and renders Tabelle, Spiele and Torschützen.
+   Loads local JSON and renders Tabelle, Spiele and Statistik.
    No framework, no build step. */
 
 const DATA = { config: null, standings: null, matches: null, scorers: null,
@@ -316,72 +316,160 @@ function playerBlock(list) {
     `</li>`).join("") + `</ul>`;
 }
 
-// Torschützen werden von Hand erfasst und darum nur für unser eigenes Team —
-// eine Team-Auswahl gäbe es hier nichts zu filtern.
-function renderScorers() {
-  const all = (DATA.matches && DATA.matches.matches) || [];
-  const our = DATA.config && DATA.config.ourTeam;
+/* Statistik: every player of our team, with what the season says about them.
+   Appearances come from the line-ups, goals from the scorer lists, cards from the
+   Verlauf. Someone on the bench who never came on ("kein Einsatz") is listed, but
+   that game is not counted as played. */
 
-  // key = player -> { player, team, total, goals: [{date, opponent, minute}] }
+// "Verwarnung Lian Timo Gisin (Rossoneri)" -> "Lian Timo Gisin"
+const CARD_PREFIX = /^(verwarnung|ausschluss|gelb[-\s]?rot\w*|rote karte|gelbe karte)\s*/i;
+function cardPlayerName(text) {
+  return String(text || "").replace(CARD_PREFIX, "")
+                          .replace(/\s*\([^)]*\)\s*$/, "").trim();
+}
+
+const CARD_KIND = { gelb: "yellow", gelbrot: "yellowRed", rot: "red" };
+
+// Sorting state for the table; most goals first is the interesting default.
+let statSort = { key: "goals", dir: -1 };
+
+function collectStats() {
+  const our = (DATA.config && DATA.config.ourTeam) || "";
+  const all = [...((DATA.matches && DATA.matches.matches) || [])]
+    .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+
   const stats = new Map();
+  const get = name => {
+    const key = String(name || "").trim();
+    if (!key) return null;
+    if (!stats.has(key)) {
+      stats.set(key, { name: key, number: null, games: 0, goals: 0,
+                       yellow: 0, yellowRed: 0, red: 0, goalList: [] });
+    }
+    return stats.get(key);
+  };
+
+  // Everyone on the roster appears, even with an empty line.
+  ((DATA.players && DATA.players.players) || []).forEach(p => {
+    const entry = typeof p === "string" ? { name: p } : (p || {});
+    const s = get(entry.name);
+    if (s && entry.number != null) s.number = entry.number;
+  });
+
   all.forEach(m => {
+    const lineup = ((m.detail && m.detail.lineups) || []).find(l => l && l.team === our);
+    if (lineup) {
+      [...(lineup.starting || []), ...(lineup.subs || [])].forEach(p => {
+        const s = get(p && p.name);
+        if (!s) return;
+        if (p.number != null) s.number = p.number;   // a later game wins
+        if (!p.unused) s.games += 1;
+      });
+    }
+
     (m.scorers || []).forEach(g => {
-      if (!g || !g.player) return;
-      const team = g.team || our;
-      if (team !== our) return;
-      const opponent = m.home === team ? m.away : m.home;
-      const key = g.player;
-      let s = stats.get(key);
-      if (!s) { s = { player: g.player, team, total: 0, goals: [] }; stats.set(key, s); }
-      s.total += 1;
-      s.goals.push({ date: m.date, opponent, minute: g.minute, home: m.home, away: m.away });
+      if (!g || !g.player || (g.team && g.team !== our)) return;
+      const s = get(g.player);
+      if (!s) return;
+      s.goals += 1;
+      s.goalList.push({ date: m.date, minute: g.minute,
+                        opponent: m.home === our ? m.away : m.home });
+    });
+
+    ((m.detail && m.detail.events) || []).forEach(e => {
+      const field = CARD_KIND[e && e.kind];
+      if (!field) return;
+      // Only ours — an opponent's booking sits in the same list.
+      const name = cardPlayerName(e.text).toLowerCase();
+      const mine = [...stats.keys()].find(k => k.toLowerCase() === name);
+      if (mine) stats.get(mine)[field] += 1;
     });
   });
 
-  const ranked = [...stats.values()].sort((a, b) => b.total - a.total || a.player.localeCompare(b.player));
-  // Newest goal first, so "when" reads naturally.
-  ranked.forEach(s => s.goals.sort((a, b) =>
-    (b.date || "").localeCompare(a.date || "") || (b.minute || 0) - (a.minute || 0)));
+  return [...stats.values()];
+}
 
-  const list = document.getElementById("scorer-list");
-  list.innerHTML = "";
-  if (!ranked.length) {
-    list.innerHTML = `<li class="hint">Noch keine Tore erfasst.</li>`;
+const STAT_COLUMNS = [
+  { key: "number", label: "Nr.", title: "Rückennummer", cls: "c-num" },
+  { key: "name", label: "Spieler", title: "Name", cls: "c-name" },
+  { key: "games", label: "Sp.", title: "Spiele", cls: "c-num" },
+  { key: "goals", label: "Tore", title: "Tore", cls: "c-num" },
+  { key: "yellow", label: "🟨", title: "Gelbe Karten", cls: "c-num" },
+  { key: "red", label: "🟥", title: "Rote Karten (inkl. Gelb-Rot)", cls: "c-num" },
+];
+
+function sortStats(rows) {
+  const { key, dir } = statSort;
+  const value = r => (key === "name" ? r.name
+                    : key === "red" ? r.red + r.yellowRed
+                    : r[key] == null ? -1 : r[key]);
+  return rows.sort((a, b) => {
+    const x = value(a), y = value(b);
+    const cmp = typeof x === "string" ? x.localeCompare(y) : x - y;
+    // A stable second key, so equal rows keep a sensible order.
+    return (cmp * dir) || a.name.localeCompare(b.name);
+  });
+}
+
+function renderStats() {
+  const box = document.getElementById("stats-table");
+  if (!box) return;
+  const rows = sortStats(collectStats());
+  if (!rows.length) {
+    box.innerHTML = `<p class="hint">Noch keine Spieler erfasst.</p>`;
     return;
   }
-  ranked.forEach((s, i) => {
-    const li = document.createElement("li");
-    li.className = "scorer clickable";
 
-    const head = document.createElement("button");
-    head.type = "button";
-    head.className = "scorer-head";
-    const last = s.goals.find(g => g.date);
-    const sub = [last ? "letztes Tor: " + fmtDate(last.date) : ""].filter(Boolean);
-    head.innerHTML =
-      `<span class="scorer-rank">${i + 1}</span>` +
-      `<span class="sc-name">${esc(s.player)}` +
-        sub.map(t => `<span class="sc-team">${t}</span>`).join("") +
-      `</span>` +
-      `<span class="sc-goals">${s.total}<span>${s.total === 1 ? "Tor" : "Tore"}</span></span>` +
-      `<span class="chev">▾</span>`;
+  const head = STAT_COLUMNS.map(c => {
+    const on = statSort.key === c.key;
+    const arrow = on ? (statSort.dir < 0 ? " ▾" : " ▴") : "";
+    const aria = on ? (statSort.dir < 0 ? "descending" : "ascending") : "none";
+    return `<th class="${c.cls}${on ? " sorted" : ""}" data-sort="${c.key}" ` +
+           `title="${esc(c.title)}" aria-sort="${aria}">` +
+           `<button type="button">${c.label}${arrow}</button></th>`;
+  }).join("");
 
-    // Every goal with when it fell, newest first.
-    const detail = document.createElement("div");
-    detail.className = "scorer-vs";
-    detail.innerHTML = `<strong>${s.total === 1 ? "Das Tor" : "Die Tore"}</strong><ul>` +
-      s.goals.map(g => {
-        const when = g.date ? fmtDate(g.date) : "";
-        const vs = g.opponent ? ` gegen ${esc(g.opponent)}` : "";
-        return `<li><span>${when}${vs}</span>` +
-               `<span class="c">${g.minute ? esc(g.minute) + "." + " Min." : ""}</span></li>`;
-      }).join("") +
-      `</ul>`;
+  const dash = n => (n ? n : "·");
+  const body = rows.map(r => {
+    const reds = r.red + r.yellowRed;
+    const goals = [...r.goalList].sort((a, b) =>
+      (b.date || "").localeCompare(a.date || "") || (b.minute || 0) - (a.minute || 0));
+    return `<tr class="${goals.length ? "clickable" : ""}">` +
+      `<td class="c-num">${r.number != null ? esc(r.number) : ""}</td>` +
+      `<td class="c-name">${esc(r.name)}` +
+        (goals.length ? `<span class="chev">▾</span>` : "") + `</td>` +
+      `<td class="c-num">${dash(r.games)}</td>` +
+      `<td class="c-num strong">${dash(r.goals)}</td>` +
+      `<td class="c-num">${dash(r.yellow)}</td>` +
+      `<td class="c-num">${dash(reds)}</td>` +
+    `</tr>` +
+    (goals.length ? `<tr class="stat-detail" hidden><td colspan="6">` +
+      `<strong>${r.goals === 1 ? "Das Tor" : "Die Tore"}</strong><ul>` +
+      goals.map(g => `<li><span>${g.date ? fmtDate(g.date) : ""}` +
+                     `${g.opponent ? " gegen " + esc(g.opponent) : ""}</span>` +
+                     `<span class="c">${g.minute ? esc(g.minute) + ". Min." : ""}</span></li>`).join("") +
+      `</ul></td></tr>` : "");
+  }).join("");
 
-    li.appendChild(head);
-    li.appendChild(detail);
-    head.addEventListener("click", () => li.classList.toggle("open"));
-    list.appendChild(li);
+  box.innerHTML = `<table class="stats"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+
+  box.querySelectorAll("th[data-sort]").forEach(th => {
+    th.addEventListener("click", () => {
+      const key = th.dataset.sort;
+      // The same column flips direction; a new one starts the way it reads best.
+      if (statSort.key === key) statSort.dir *= -1;
+      else statSort = { key, dir: key === "name" ? 1 : -1 };
+      renderStats();
+    });
+  });
+
+  box.querySelectorAll("tbody tr.clickable").forEach(tr => {
+    tr.addEventListener("click", () => {
+      const detail = tr.nextElementSibling;
+      if (!detail || !detail.classList.contains("stat-detail")) return;
+      detail.hidden = !detail.hidden;
+      tr.classList.toggle("open", !detail.hidden);
+    });
   });
 }
 
@@ -516,7 +604,7 @@ function renderAll() {
   populateSelect("team-filter");
   renderStandings();
   renderMatches();
-  renderScorers();
+  renderStats();
   if (AUTH.isAdmin()) ADMIN.render();
 }
 
@@ -586,7 +674,7 @@ const App = {
     DATA.players = DATA.lineups = DATA.friendlies = null;
     lastLoad = 0;
     document.querySelector("#standings-table tbody").innerHTML = "";
-    ["match-list", "scorer-list", "team-filter",
+    ["match-list", "stats-table", "team-filter",
      "settings-match", "scorer-editor"].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.innerHTML = "";

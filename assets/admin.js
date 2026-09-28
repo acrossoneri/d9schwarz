@@ -1031,10 +1031,10 @@ const ADMIN = (() => {
   function markDirty() {
     dirty = true;
     saveDraft();
-    // Let the Spiele and Torschützen tabs show the edit right away.
+    // Let the Spiele and Statistik tabs show the edit right away.
     mergeScorers();
     renderMatches();
-    renderScorers();
+    renderStats();
     renderStatus();
   }
 

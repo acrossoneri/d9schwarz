@@ -4,10 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AC Rossoneri · Junioren D-9 schwarz</title>
-  <meta name="description" content="Tabelle, Spielplan, Resultate und Torschützen der Junioren D-9 schwarz des AC Rossoneri." />
+  <meta name="description" content="Tabelle, Spielplan, Resultate und Statistik der Junioren D-9 schwarz des AC Rossoneri." />
   <meta name="robots" content="noindex, nofollow" />
   <link rel="icon" href="assets/logo.png" />
-  <link rel="stylesheet" href="assets/style.css?v=20260903f" />
+  <link rel="stylesheet" href="assets/style.css?v=20260928a" />
 </head>
 <body>
   <!--
@@ -67,7 +67,7 @@
   <nav class="tabs wrap" role="tablist" aria-label="Ansichten">
     <button class="tab is-active" role="tab" aria-selected="true" data-tab="tabelle">Tabelle</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="spiele">Spiele</button>
-    <button class="tab" role="tab" aria-selected="false" data-tab="torschuetzen">Torschützen</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="statistik">Statistik</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="einstellungen" hidden>Einstellungen</button>
   </nav>
 
@@ -105,9 +105,12 @@
     </section>
 
     <!-- TORSCHÜTZEN -->
-    <section id="tab-torschuetzen" class="panel" role="tabpanel" hidden>
-      <h2>Torschützen</h2>
-      <ol class="scorer-list" id="scorer-list"></ol>
+    <section id="tab-statistik" class="panel" role="tabpanel" hidden>
+      <h2>Statistik</h2>
+      <p class="hint">Alle Spieler der Mannschaft. Auf eine Spaltenüberschrift tippen
+        sortiert danach, nochmals tippen dreht die Richtung um. Wer Tore erzielt hat,
+        lässt sich antippen — dann stehen sie einzeln da.</p>
+      <div id="stats-table" class="stats-wrap"></div>
     </section>
 
     <!-- EINSTELLUNGEN (nur Admin) -->
@@ -196,7 +199,7 @@
       </div>
 
       <h2>Benutzer</h2>
-      <p class="hint">„Nur lesen“ sieht Tabelle, Spiele und Torschützen. „Admin“ sieht
+      <p class="hint">„Nur lesen“ sieht Tabelle, Spiele und Statistik. „Admin“ sieht
         zusätzlich diese Seite.</p>
       <div id="user-list" class="user-list"></div>
       <div class="user-new">
@@ -241,8 +244,8 @@
   </footer>
   </div><!-- /#app -->
 
-  <script src="assets/auth.js?v=20260903f"></script>
-  <script src="assets/app.js?v=20260903f"></script>
-  <script src="assets/admin.js?v=20260903f"></script>
+  <script src="assets/auth.js?v=20260928a"></script>
+  <script src="assets/app.js?v=20260928a"></script>
+  <script src="assets/admin.js?v=20260928a"></script>
 </body>
 </html>
