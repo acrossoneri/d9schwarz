@@ -50,8 +50,9 @@ ihn kann niemand etwas veröffentlichen.
 Der Tab **Statistik** listet alle Spieler der Mannschaft mit Spielen, Toren und
 Karten. Die Zahlen werden beim Anzeigen gerechnet, nicht gespeichert:
 
-* **Spiele** — Einsätze aus den erfassten Aufstellungen. Wer als „kein Einsatz“
-  auf der Bank stand, erscheint in der Liste, aber das Spiel zählt nicht.
+* **Spiele** — wer auf dem Matchblatt steht, hat gespielt. Im D-9 kommt jeder zum
+  Einsatz, der auftaucht; die Markierung „kein Einsatz“ des Verbands wird darum
+  für diese Zählung nicht berücksichtigt.
 * **Tore** — aus den Torschützenlisten; die Zeile lässt sich aufklappen und zeigt
   jedes Tor mit Gegner und, wo bekannt, Minute.
 * **Karten** — aus dem Verlauf des Spielberichts. Der Name wird aus dem Text

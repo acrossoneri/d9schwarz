@@ -318,8 +318,9 @@ function playerBlock(list) {
 
 /* Statistik: every player of our team, with what the season says about them.
    Appearances come from the line-ups, goals from the scorer lists, cards from the
-   Verlauf. Someone on the bench who never came on ("kein Einsatz") is listed, but
-   that game is not counted as played. */
+   Verlauf. Being on the team sheet counts as having played — at D-9 everyone who
+   turns up gets minutes, so the association's "kein Einsatz" mark is not the
+   measure we want here. */
 
 // "Verwarnung Lian Timo Gisin (Rossoneri)" -> "Lian Timo Gisin"
 const CARD_PREFIX = /^(verwarnung|ausschluss|gelb[-\s]?rot\w*|rote karte|gelbe karte)\s*/i;
@@ -363,7 +364,7 @@ function collectStats() {
         const s = get(p && p.name);
         if (!s) return;
         if (p.number != null) s.number = p.number;   // a later game wins
-        if (!p.unused) s.games += 1;
+        s.games += 1;
       });
     }
 
