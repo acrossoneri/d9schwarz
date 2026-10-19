@@ -344,7 +344,7 @@ function collectStats() {
     const key = String(name || "").trim();
     if (!key) return null;
     if (!stats.has(key)) {
-      stats.set(key, { name: key, number: null, games: 0, goals: 0,
+      stats.set(key, { name: key, number: null, worn: {}, games: 0, goals: 0,
                        yellow: 0, yellowRed: 0, red: 0, goalList: [] });
     }
     return stats.get(key);
@@ -363,7 +363,9 @@ function collectStats() {
       [...(lineup.starting || []), ...(lineup.subs || [])].forEach(p => {
         const s = get(p && p.name);
         if (!s) return;
-        if (p.number != null) s.number = p.number;   // a later game wins
+        // The number worn most often, not the latest: standing in for the keeper
+        // for one game should not rewrite an outfield player's number.
+        if (p.number != null) s.worn[p.number] = (s.worn[p.number] || 0) + 1;
         s.games += 1;
       });
     }
@@ -387,7 +389,15 @@ function collectStats() {
     });
   });
 
-  return [...stats.values()];
+  // Settle each number once everything is counted. The roster's own entry wins if
+  // a player never appeared in a line-up.
+  return [...stats.values()].map(s => {
+    const worn = Object.entries(s.worn);
+    if (worn.length) {
+      s.number = Number(worn.sort((a, b) => b[1] - a[1] || Number(b[0]) - Number(a[0]))[0][0]);
+    }
+    return s;
+  });
 }
 
 const STAT_COLUMNS = [

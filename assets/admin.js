@@ -841,20 +841,28 @@ const ADMIN = (() => {
     const byMatch = (DATA.lineups && DATA.lineups.byMatch) || {};
     const dates = {};
     ourMatches().forEach(m => { dates[m.id] = m.date || ""; });
+    // The number worn most often, the more recent of them on a tie — a one-game
+    // stand-in between the posts should not rewrite someone's number.
     const seen = new Map();
     Object.entries(byMatch).forEach(([id, l]) => {
       [...((l && l.starting) || []), ...((l && l.subs) || [])].forEach(p => {
         const name = ((p && p.name) || "").trim();
         if (!name) return;
-        const when = dates[id] || "";
-        const prev = seen.get(name);
-        if (!prev || when >= prev.when) {
-          seen.set(name, { name, when, ...(Number.isFinite(p.number) ? { number: p.number } : {}) });
-        }
+        if (!seen.has(name)) seen.set(name, new Map());
+        if (!Number.isFinite(p.number)) return;
+        const worn = seen.get(name);
+        const prev = worn.get(p.number) || { count: 0, last: "" };
+        worn.set(p.number, { count: prev.count + 1,
+                             last: (dates[id] || "") > prev.last ? (dates[id] || "") : prev.last });
       });
     });
-    return [...seen.values()]
-      .map(({ name, number }) => (number != null ? { name, number } : { name }))
+    return [...seen.entries()]
+      .map(([name, worn]) => {
+        if (!worn.size) return { name };
+        const number = [...worn.entries()]
+          .sort((a, b) => b[1].count - a[1].count || b[1].last.localeCompare(a[1].last))[0][0];
+        return { name, number };
+      })
       .sort((a, b) => a.name.localeCompare(b.name));
   }
 

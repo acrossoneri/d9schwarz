@@ -199,7 +199,9 @@ def main():
               f"{fx['away']}  — {len(ours['starting'])} Start / {len(ours['subs'])} Ersatz"
               f"{note}")
 
-    # Squad, with the number from the most recent game each player appeared in.
+    # Squad, with the number each player usually wears — the one worn most often,
+    # the more recent of them if that ties. Not simply the latest: standing in for
+    # the keeper for one game should not rewrite an outfield player's number.
     dates = {}
     for gid in lineups["byMatch"]:
         g = league.get(gid) or next((m for m in friendlies["matches"] if str(m["id"]) == gid), {})
@@ -210,11 +212,20 @@ def main():
             name = (p.get("name") or "").strip()
             if not name:
                 continue
-            prev = squad.get(name)
-            if not prev or dates[gid] >= prev[0]:
-                squad[name] = (dates[gid], p.get("number"))
-    players = [{"name": n, **({"number": num} if num is not None else {})}
-               for n, (_when, num) in sorted(squad.items())]
+            worn = squad.setdefault(name, {})
+            if p.get("number") is None:
+                continue
+            seen = worn.setdefault(p["number"], {"count": 0, "last": ""})
+            seen["count"] += 1
+            seen["last"] = max(seen["last"], dates[gid])
+
+    players = []
+    for name, worn in sorted(squad.items()):
+        entry = {"name": name}
+        if worn:
+            number = max(worn.items(), key=lambda kv: (kv[1]["count"], kv[1]["last"]))[0]
+            entry["number"] = number
+        players.append(entry)
 
     # Scorers. Where the report names them, take them from there; --scorers then
     # only has to cover the games whose Verlauf is empty.
