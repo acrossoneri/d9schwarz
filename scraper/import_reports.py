@@ -157,6 +157,18 @@ def main():
             continue
         fx, detail = report["fixture"], report["detail"]
         gid = fx["id"]
+        if not gid:
+            # Some saves carry no Spielnummer. Date plus both teams identifies the
+            # game in the group Spielplan just as well.
+            hit = next((g for g in league.values()
+                        if g.get("date") == fx["date"] and g.get("home") == fx["home"]
+                        and g.get("away") == fx["away"]), None)
+            if hit:
+                gid = fx["id"] = str(hit["id"])
+                print(f"  Spielnummer fehlte, über Datum und Teams gefunden: {gid}")
+            elif fx["date"]:
+                # Not in the Spielplan either: give it a stable id of its own.
+                gid = fx["id"] = "x" + fx["date"].replace("-", "")
         ours = next((l for l in detail.get("lineups", []) if l["team"] == our), None)
         if not gid or not ours:
             print(f"  übersprungen: {Path(path).name} — keine eigene Aufstellung",

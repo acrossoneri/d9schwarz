@@ -633,7 +633,15 @@ const ADMIN = (() => {
       report.homeScore = parseInt(score[1], 10);
       report.awayScore = parseInt(score[2], 10);
     }
-    const venue = txt(head.querySelector("span.hidden-xs")).replace(/^[\s\-\u2013]+/, "");
+    // Some saves put the tail in its own span, others leave it in the header text
+    // and drop the Spielnummer entirely \u2014 fall back to whatever follows the kickoff.
+    let venue = txt(head.querySelector("span.hidden-xs"));
+    if (!venue) {
+      const tail = txt(head).match(/\d{2}:\d{2}\s*[-\u2013]\s*(.+)$/);
+      venue = tail ? tail[1] : "";
+    }
+    venue = venue.replace(/^\s*Spielnummer:?\s*\d+\s*[-\u2013]\s*/, "")
+                 .replace(/^[\s\-\u2013]+/, "").trim();
     if (venue) report.venue = venue;
 
     const periods = txt(doc.querySelector("div[id$='divToreViertel']")).replace(/[()]/g, "");

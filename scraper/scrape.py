@@ -153,8 +153,15 @@ def parse_game_detail(html):
         return {}
 
     detail = {}
-    # "… - Spielnummer: 145015 - Bifang, Lausen - Schelligacker" -> the ground only
-    venue = re.sub(r"^[\s\-\u2013]+", "", _txt(head.select_one("span.hidden-xs")))
+    # "… - Spielnummer: 145015 - Bifang, Lausen - Schelligacker" -> the ground only.
+    # Some saves put the tail in its own span, others leave it in the header text and
+    # drop the Spielnummer entirely, so fall back to whatever follows the kickoff.
+    venue = _txt(head.select_one("span.hidden-xs"))
+    if not venue:
+        tail = re.search(r"\d{2}:\d{2}\s*[-\u2013]\s*(.+)$", _txt(head))
+        venue = tail.group(1) if tail else ""
+    venue = re.sub(r"^\s*Spielnummer:?\s*\d+\s*[-\u2013]\s*", "", venue)
+    venue = re.sub(r"^[\s\-\u2013]+", "", venue).strip()
     if venue:
         detail["venue"] = venue
 
