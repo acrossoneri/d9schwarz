@@ -190,7 +190,11 @@ Fragt nach Benutzername und Passwort (oder nimmt `SITE_USER`/`SITE_PASSWORD`),
 schreibt `lineups`, `players`, `friendlies` und — mit `--scorers` — `scorers`.
 Spiele ohne Eintrag im Spielplan legt es selbst an, Torschützennamen werden gegen
 das Aufgebot des Spiels aufgelöst (Vorname genügt, Tippfehler bis zwei Buchstaben).
-`--dry-run` zeigt nur, was passieren würde.
+`--dry-run` zeigt nur, was passieren würde. Liegt zu einem Spiel nur ein
+Screenshot vor, nimmt `--manual datei.json` einen von Hand erfassten Bericht
+in derselben Form entgegen, die `parse_report()` liefert — `{fixture, detail}`.
+Tore gehören als Ereignisse mit `kind: "tor"` und `scorer` hinein, dann werden
+unsere Torschützen daraus genauso abgeleitet wie aus einem echten Bericht.
 
 ### Spieldetails
 

@@ -24,6 +24,7 @@ matched against that game's squad. Add a minute after a name if you have it:
 "Dean 33".
 """
 import argparse
+import json
 import re
 import sys
 import unicodedata
@@ -136,6 +137,9 @@ def main():
     ap.add_argument("reports", nargs="+", help="HTML-Dateien aus dem Browser")
     ap.add_argument("--scorers", action="append", default=[],
                     metavar="NR=Name,Name", help="Torschützen in Reihenfolge der Tore")
+    ap.add_argument("--manual", action="append", default=[], metavar="DATEI.json",
+                    help="von Hand erfasster Bericht, wenn nur Screenshots vorliegen "
+                         "— gleiche Form wie parse_report(): {fixture, detail}")
     ap.add_argument("--dry-run", action="store_true", help="nur zeigen, nichts schreiben")
     args = ap.parse_args()
 
@@ -150,8 +154,11 @@ def main():
 
     seen = []
     auto_scorers = {}
-    for path in args.reports:
-        report = parse_report(path)
+    sources = ([(p, parse_report) for p in args.reports]
+               + [(p, lambda f: json.loads(Path(f).read_text(encoding="utf-8")))
+                  for p in args.manual])
+    for path, read in sources:
+        report = read(path)
         if not report:
             print(f"  übersprungen: {Path(path).name} — kein Spielbericht", file=sys.stderr)
             continue
