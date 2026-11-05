@@ -150,15 +150,44 @@ def admin_count(cfg, master):
     return sum(1 for e in cfg["users"].values() if open_meta(master, e)[1] == "admin")
 
 
+def _terminal():
+    """A terminal to ask on when stdin is not one — run from a tool, say, or with
+    the output piped. Returns None if there is genuinely nobody to ask."""
+    if sys.stdin.isatty():
+        return None                      # plain input()/getpass() will do
+    try:
+        return open("/dev/tty", "r+")
+    except OSError:
+        return None
+
+
 def credentials():
     user = os.environ.get("SITE_USER")
     pw = os.environ.get("SITE_PASSWORD")
-    if not (user and pw) and not sys.stdin.isatty():
+    if user and pw:
+        return user, pw
+
+    tty = _terminal()
+    if not sys.stdin.isatty() and tty is None:
         # e.g. GitHub Actions with the secrets unset — say so instead of
         # dying on an EOF from a prompt nobody can answer.
         sys.exit("ERROR: SITE_USER / SITE_PASSWORD are not set (repository secrets?).")
-    user = user or input("Benutzername: ")
-    pw = pw or getpass.getpass("Passwort: ")
+    try:
+        if not user:
+            if tty:
+                tty.write("Benutzername: ")
+                tty.flush()
+                user = tty.readline().strip()
+            else:
+                user = input("Benutzername: ")
+        if not pw:
+            # getpass finds /dev/tty itself; the stream only steers the prompt.
+            pw = getpass.getpass("Passwort: ", stream=tty) if tty \
+                else getpass.getpass("Passwort: ")
+    finally:
+        if tty:
+            tty.close()
+
     if not (user and pw):
         sys.exit("ERROR: SITE_USER / SITE_PASSWORD missing.")
     return user, pw
