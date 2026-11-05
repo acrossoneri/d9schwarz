@@ -701,7 +701,7 @@ const ADMIN = (() => {
 
   async function importReportFiles(files) {
     const known = new Map(ourMatches().map(m => [String(m.id), m]));
-    const done = [], skipped = [], extra = [];
+    const done = [], skipped = [], extra = [], scored = [];
 
     for (const file of files) {
       let report = null;
@@ -716,6 +716,13 @@ const ADMIN = (() => {
       // Not in the group Spielplan — a friendly. Build the fixture from the report
       // and keep it in our own file, which the scraper never touches.
       let match = known.get(String(report.number));
+      if (!match && report.date) {
+        // Some reports carry no Spielnummer. Date plus both teams identifies the
+        // game in the Spielplan just as well.
+        match = ourMatches().find(m => m.date === report.date
+                                       && m.home === report.home
+                                       && m.away === report.away) || null;
+      }
       if (!match) {
         match = addFriendly(report);
         if (!match) {
@@ -734,6 +741,27 @@ const ADMIN = (() => {
       if (opponents.length) record.opponents = opponents;
       byMatchLineup()[match.id] = record;
 
+      /* Where the report names its scorers, take them straight from the Verlauf.
+         Whose goal it is follows from whose squad the scorer is in, so the
+         opponent's goals stay out. Reports with an empty Verlauf are untouched —
+         those keep whatever was entered by hand. */
+      const squad = [...(ours.starting || []), ...(ours.subs || [])]
+        .map(p => (p && p.name) || "").filter(Boolean);
+      const goals = (report.events || [])
+        .filter(e => e && e.kind === "tor" && e.scorer)
+        .map(e => ({ e, name: resolveScorerName(e.scorer, squad) }))
+        .filter(x => x.name)
+        .sort((a, b) => (a.e.minute || 0) - (b.e.minute || 0))
+        .map(({ e, name }) => {
+          const entry = { player: name, team: ourTeam() };
+          if (e.minute != null) entry.minute = e.minute;
+          return entry;
+        });
+      if (goals.length) {
+        byMatch()[match.id] = goals;
+        scored.push(`${matchLabel(match)}: ${goals.map(g => g.player.split(" ")[0]).join(", ")}`);
+      }
+
       selectedId = match.id;
       done.push(`${matchLabel(match)} — ${ours.starting.length} Start, ${ours.subs.length} Ersatz`
               + (opponents.length ? ", Gegner dazu" : ""));
@@ -741,6 +769,7 @@ const ADMIN = (() => {
 
     if (done.length) {
       markLineupDirty();
+      if (scored.length) markDirty();     // the scorer file changed too
       renderMatchPicker();
       renderEditor();
       renderPlayers();
@@ -748,6 +777,7 @@ const ADMIN = (() => {
     const note = [done.length ? `${done.length} Spielbericht(e) übernommen: ${done.join(" · ")}.`
                               : "Nichts übernommen.",
                   extra.length ? `Als eigenes Spiel angelegt: ${extra.join(", ")}.` : "",
+                  scored.length ? `Torschützen aus dem Bericht: ${scored.join(" · ")}.` : "",
                   skipped.length ? `Übersprungen: ${skipped.join("; ")}.` : ""]
                  .filter(Boolean).join(" ");
     renderStatus(note + (done.length ? " Bitte veröffentlichen." : ""),
